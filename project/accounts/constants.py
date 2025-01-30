@@ -4,4 +4,4 @@ from django.db import models
 
 class Position(models.TextChoices):
     EMPLOYEE = 'EMPLOYEE', _('Подчиненный')
-    MANAGER = 'EMPLOYEE', _('Менеджер')
+    MANAGER = 'MANAGER', _('Менеджер')

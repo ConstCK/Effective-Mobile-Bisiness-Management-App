@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from accounts.models import Profile
 from .constants import TaskStatuses
@@ -10,6 +11,9 @@ class News(models.Model):
     author = models.ForeignKey(Profile, on_delete=models.CASCADE,
                                verbose_name='Автор новости')
 
+    def __str__(self) -> str:
+        return f'Новость {self.title}'
+
     class Meta:
         verbose_name = 'Новость'
         verbose_name_plural = 'Новости'
@@ -17,12 +21,17 @@ class News(models.Model):
 
 class Task(models.Model):
     name = models.CharField(max_length=128, verbose_name='Название задачи')
-    assigned_by = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tasks',
+    assigned_by = models.ForeignKey(Profile, on_delete=models.CASCADE,
+                                    related_name='created_task',
                                     verbose_name='Создатель задачи')
-    assigned_to = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tasks',
+    assigned_to = models.ForeignKey(Profile, on_delete=models.CASCADE,
+                                    related_name='assigned_tasks',
                                     verbose_name='Исполнитель задачи')
-    created_at = models.DateTimeField(auto_add=True, verbose_name='Дата создания задачи')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания задачи')
     deadline = models.DateTimeField(verbose_name='Deadline задачи')
+
+    def __str__(self) -> str:
+        return f'Задача {self.name}'
 
     class Meta:
         verbose_name = 'Задача'
@@ -35,18 +44,32 @@ class TaskStatus(models.Model):
                               default=TaskStatuses.PENDING, verbose_name='Статус задачи')
     comment = models.CharField(max_length=128, blank=True, verbose_name='Комментарий к задаче')
 
+    def __str__(self) -> str:
+        return f'Статус задачи {self.task}'
+
     class Meta:
         verbose_name = 'Статус задачи'
         verbose_name_plural = 'Статусы задач'
         constraints = (models.UniqueConstraint(fields=('task', 'status'),
-                                               name='Unique task constraint'))
+                                               name='Unique task constraint'),)
 
 
 class TaskEstimation(models.Model):
     task = models.OneToOneField(Task, on_delete=models.CASCADE, verbose_name='Задача')
-    deadline_meeting = models.PositiveSmallIntegerField(verbose_name='Соблюдение сроков задачи')
-    completeness = models.PositiveSmallIntegerField(verbose_name='Полнота выполнения задачи')
-    quality = models.PositiveSmallIntegerField(verbose_name='Качество выполнения задачи')
+    deadline_meeting = models.PositiveSmallIntegerField(verbose_name='Соблюдение сроков задачи',
+                                                        validators=(MaxValueValidator(10),
+                                                                    MinValueValidator(1)))
+    completeness = models.PositiveSmallIntegerField(verbose_name='Полнота выполнения задачи',
+                                                    validators=(MaxValueValidator(10),
+                                                                MinValueValidator(1))
+                                                    )
+    quality = models.PositiveSmallIntegerField(verbose_name='Качество выполнения задачи',
+                                               validators=(MaxValueValidator(10),
+                                                           MinValueValidator(1))
+                                               )
+
+    def __str__(self) -> str:
+        return f'Оценка задачи {self.task}'
 
     class Meta:
         verbose_name = 'Оценка задачи'
@@ -62,6 +85,9 @@ class Meeting(models.Model):
     participants = models.ManyToManyField(Profile,
                                           verbose_name='Участники встречи')
 
+    def __str__(self) -> str:
+        return f'Встреча в {self.start_at}'
+
     class Meta:
         verbose_name = 'Встреча'
         verbose_name_plural = 'Встречи'
@@ -75,8 +101,11 @@ class Calendar(models.Model):
     start_at = models.DateTimeField(verbose_name='Время начала дела')
     end_at = models.DateTimeField(verbose_name='Время окончания дела')
 
+    def __str__(self) -> str:
+        return f'Запланированное дело - {self.name}'
+
     class Meta:
         verbose_name = 'Зарезервированное время для дел'
         verbose_name_plural = 'Зарезервированное время для дел'
         constraints = (models.UniqueConstraint(fields=('owner', 'start_at', 'end_at'),
-                                               name='Unique calendar constraint'))
+                                               name='Unique calendar constraint'),)
