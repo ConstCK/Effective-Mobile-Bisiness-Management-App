@@ -1,8 +1,9 @@
 from rest_framework import routers
 
-from activities.views import NewsViewSet
+from activities.views import NewsViewSet, MeetingViewSet
 
 router = routers.DefaultRouter()
-router.register('', NewsViewSet)
+router.register('news', NewsViewSet)
+router.register('meeting', MeetingViewSet)
 
 urlpatterns = router.urls

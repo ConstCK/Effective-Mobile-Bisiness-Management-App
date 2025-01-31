@@ -5,13 +5,11 @@ from activities.models import News, Task, TaskStatus, TaskEstimation, Meeting, C
 
 class NewsSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    author_name = serializers.CharField(source='author.user.username', read_only=True)
 
     class Meta:
-        fields = ['id', 'name', 'content', 'author']
+        fields = ['id', 'title', 'content', 'author_name']
         model = News
-        extra_kwargs = {
-            'author': {'read_only': True}
-        }
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -41,9 +39,10 @@ class TaskEstimationSerializer(serializers.ModelSerializer):
 
 class MeetingSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    organizer = serializers.CharField(source='', read_only=True)
 
     class Meta:
-        fields = ['id', 'organized_by', 'start_at', 'end_at', 'participants']
+        fields = ['id', 'organizer', 'start_at', 'end_at', 'participants']
         model = Meeting
 
 

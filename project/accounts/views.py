@@ -31,26 +31,25 @@ class UserViewSet(viewsets.ModelViewSet):
     def create(self, request: Request, *args, **kwargs) -> Response:
         try:
             serializer = self.serializer_class(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                user = User.objects.create_user(username=serializer.validated_data['username'],
-                                                password=serializer.validated_data['password'],
-                                                is_staff=serializer.validated_data['is_staff'])
-                token = Token.objects.create(user=user)
-                if 'team' in request.data:
-                    company = Company.objects.filter(pk=request.data['team']).first()
-                    print(company)
-                    profile = Profile.objects.create(user=user, is_administrator=user.is_staff,
-                                                     team=company)
-                else:
-                    profile = Profile.objects.create(user=user, is_administrator=user.is_staff,)
+            serializer.is_valid(raise_exception=True)
+            user = User.objects.create_user(username=serializer.validated_data['username'],
+                                            password=serializer.validated_data['password'],
+                                            is_staff=serializer.validated_data['is_staff'])
+            token = Token.objects.create(user=user)
+            if 'team' in request.data:
+                company = Company.objects.filter(pk=request.data['team']).first()
+                profile = Profile.objects.create(user=user, is_administrator=user.is_staff,
+                                                 team=company)
+            else:
+                profile = Profile.objects.create(user=user, is_administrator=user.is_staff, )
 
-                result = ProfileSerializer(profile)
+            result = ProfileSerializer(profile)
 
-                return Response({'message': 'Успешная регистрация пользователя',
-                                 'profile': result.data,
-                                 'token': token.key,
-                                 },
-                                status=status.HTTP_201_CREATED, )
+            return Response({'message': 'Успешная регистрация пользователя',
+                             'profile': result.data,
+                             'token': token.key,
+                             },
+                            status=status.HTTP_201_CREATED, )
         except IntegrityError as error:
             return Response({'message': f'Невозможно зарегистрировать пользователя.'
                                         f'Такой пользователь уже существует.'
