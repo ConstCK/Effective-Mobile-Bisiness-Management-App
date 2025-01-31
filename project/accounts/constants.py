@@ -5,3 +5,4 @@ from django.db import models
 class Position(models.TextChoices):
     EMPLOYEE = 'EMPLOYEE', _('Подчиненный')
     MANAGER = 'MANAGER', _('Менеджер')
+    BOSS = 'BOSS', _('Генеральный Менеджер')

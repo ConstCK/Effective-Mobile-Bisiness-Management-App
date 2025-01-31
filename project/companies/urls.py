@@ -1,9 +1,10 @@
 from rest_framework import routers
 
-from companies.views import CompanyViewSet
+from companies.views import CompanyViewSet, StructureViewSet
 
 router = routers.DefaultRouter()
-router.register('', CompanyViewSet)
+router.register('companies', CompanyViewSet)
+router.register('structures', StructureViewSet)
 
 
 urlpatterns = router.urls

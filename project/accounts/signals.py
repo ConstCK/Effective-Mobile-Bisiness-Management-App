@@ -6,7 +6,7 @@ from accounts.models import Profile
 
 
 # Сигнал на создание Профиля пользователя с дополнительными полями при регистрации User
-@receiver(post_save, sender=User)
-def initial_task(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance, is_administrator=instance.is_staff)
+# @receiver(post_save, sender=User)
+# def initial_task(sender, instance, created, **kwargs):
+#     if created:
+#         Profile.objects.create(user=instance, is_administrator=instance.is_staff)

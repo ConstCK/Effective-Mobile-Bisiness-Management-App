@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from activities.models import News, Task, TaskStatus, TaskEstimation, Meeting
+from activities.models import News, Task, TaskStatus, TaskEstimation, Meeting, Calendar
 
 
 class NewsSerializer(serializers.ModelSerializer):
@@ -9,6 +9,9 @@ class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'name', 'content', 'author']
         model = News
+        extra_kwargs = {
+            'author': {'read_only': True}
+        }
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -49,4 +52,4 @@ class CalendarSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ['id', 'name', 'owner', 'start_at', 'end_at', ]
-        model = Meeting
+        model = Calendar
