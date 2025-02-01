@@ -5,9 +5,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from rest_framework import viewsets, status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action, permission_classes, authentication_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,7 +14,7 @@ from rest_framework.response import Response
 from accounts.models import Profile
 from accounts.serializers import UserSerializer, ProfileSerializer
 from companies.models import Company
-from companies.serializers import CompanySerializer
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -189,3 +188,5 @@ class UserViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_200_OK)
         return Response({'message': 'У Вас недостаточно прав для получения этой информации'},
                         status=status.HTTP_403_FORBIDDEN)
+
+

@@ -78,12 +78,13 @@ class TaskEstimation(models.Model):
 
 class Meeting(models.Model):
     organizer = models.ForeignKey(Profile, on_delete=models.CASCADE,
-                                  related_name='meetings',
+                                  related_name='organized_meetings',
                                   verbose_name='Организатор встречи')
     start_at = models.DateTimeField(verbose_name='Время начала встречи')
     end_at = models.DateTimeField(verbose_name='Время завершения встречи')
     participants = models.ManyToManyField(Profile,
-                                          verbose_name='Участники встречи')
+                                          verbose_name='Участники встречи',
+                                          related_name='participated_meetings')
 
     def __str__(self) -> str:
         return f'Встреча в {self.start_at}'
@@ -94,7 +95,7 @@ class Meeting(models.Model):
 
 
 class Calendar(models.Model):
-    name = models.CharField(max_length=64, verbose_name='Название дела', blank=True)
+    name = models.CharField(max_length=64, verbose_name='Название дела')
     owner = models.ForeignKey(Profile, on_delete=models.CASCADE,
                               related_name='calendars',
                               verbose_name='Владелец зарезервированного времени')
@@ -107,5 +108,5 @@ class Calendar(models.Model):
     class Meta:
         verbose_name = 'Зарезервированное время для дел'
         verbose_name_plural = 'Зарезервированное время для дел'
-        constraints = (models.UniqueConstraint(fields=('owner', 'start_at', 'end_at'),
+        constraints = (models.UniqueConstraint(fields=('name', 'owner', 'start_at', 'end_at'),
                                                name='Unique calendar constraint'),)
