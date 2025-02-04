@@ -4,6 +4,7 @@ from http import HTTPMethod
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -17,6 +18,7 @@ from activities.serializers import NewsSerializer, MeetingSerializer, CalendarSe
 from activities.utils import Service, BusyException, AlienException
 
 
+@extend_schema(tags=['News'])
 class NewsViewSet(viewsets.ModelViewSet, ):
     """
     Класс для операций с новостями.
@@ -25,6 +27,8 @@ class NewsViewSet(viewsets.ModelViewSet, ):
     serializer_class = NewsSerializer
     queryset = News.objects.all()
     permission_classes = [IsAdminUser, ]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get', 'post', ]
 
     # Создание новости
     def create(self, request: Request, *args, **kwargs) -> Response:
@@ -46,6 +50,7 @@ class NewsViewSet(viewsets.ModelViewSet, ):
                             status=status.HTTP_400_BAD_REQUEST, )
 
 
+@extend_schema(tags=['Meeting'])
 class MeetingViewSet(viewsets.ModelViewSet, Service):
     """
     Класс для операций со встречами.
@@ -54,6 +59,8 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
     serializer_class = MeetingSerializer
     queryset = Meeting.objects.all()
     permission_classes = [IsAdminUser, ]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get', 'post', 'delete']
 
     # Создание встречи
     def create(self, request: Request, *args, **kwargs) -> Response:
@@ -190,6 +197,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
 
+@extend_schema(tags=['Calendar'])
 class CalendarViewSet(viewsets.ModelViewSet):
     """
     Класс для операций с календарем.
@@ -198,6 +206,8 @@ class CalendarViewSet(viewsets.ModelViewSet):
     serializer_class = CalendarSerializer
     queryset = Calendar.objects.all()
     permission_classes = [IsAuthenticated, ]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get']
 
     # Просмотр календаря текущего пользователя за текущий день/ месяц
     def list(self, request: Request, *args, **kwargs) -> Response:
@@ -220,6 +230,7 @@ class CalendarViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=['Task'])
 class TaskViewSet(viewsets.ModelViewSet, Service):
     """
     Класс для операций с задачами сотрудникам.
@@ -227,6 +238,8 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [IsAdminUser, ]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get', 'post', 'patch', 'delete']
 
     # Создание задачи администратором для сотрудников с присвоением статуса "Выполняется".
     # Заполнение календаря для сотрудника.
@@ -372,7 +385,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Оценка задачи начальником.
-    @action([HTTPMethod.POST, ], detail=True, url_path='estimate-task',)
+    @action([HTTPMethod.POST, ], detail=True, url_path='estimate-task', )
     def estimate_task(self, request: Request, *args, **kwargs) -> Response:
         try:
             # Поверка на принадлежность задачи профилю, присвоившую ее
@@ -404,5 +417,3 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': f'Ошибка оценки задачи.'
                                         f'Детали ошибки: {error}.'},
                             status=status.HTTP_400_BAD_REQUEST, )
-
-

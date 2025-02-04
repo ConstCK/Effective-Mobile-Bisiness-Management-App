@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import Avg
 from django.db.models.functions import Round
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from rest_framework import viewsets, status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -14,24 +15,64 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.models import Profile
-from accounts.serializers import UserSerializer, ProfileSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, Error400ResponseSerializer, \
+    Error403ResponseSerializer, Error404ResponseSerializer, SuccessTokenRequest, SuccessResponse
 from activities.models import Task, TaskEstimation
-from activities.serializers import TaskSerializer, TaskEstimationSerializer
+from activities.serializers import TaskEstimationSerializer
 from activities.utils import Service
 from companies.models import Company
 
+parameters = [
+    OpenApiParameter(
+        name='Auth header',
+        location=OpenApiParameter.HEADER,
+        description='Токен для авторизации',
+        required=True,
+        type=int
+    ),
+]
 
+
+@extend_schema(tags=['Profile'])
 class UserViewSet(viewsets.ModelViewSet, Service):
     """
     Класс для регистрации пользователя, изменения данных и удаления профиля.
-    Авторизация пользователя происходит путем передачи токена в заголовке запроса.
+    Авторизация пользователя для всех API происходит путем передачи токена в заголовке запроса.
+    Для Swagger также необходима авторизация: Authorize -> Token fe663987c55934a4888044d3e560c6194534b25c
     Пример заголовка-> Authorization: Token fe663987c55934a4888044d3e560c6194534b25c
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
     permission_classes = [AllowAny, ]
+    # Разрешенные методы класса
+    http_method_names = ['get', 'head', 'post', 'patch', 'delete', 'options']
 
     # Регистрация нового пользователя.
+    @extend_schema(summary='Регистрация нового пользователя',
+                   request=UserSerializer,
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=ProfileSerializer,
+                           description='Успешная регистрация пользователя'),
+                       status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                           response=Error403ResponseSerializer,
+                           description='Такой пользователь уже существует'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400ResponseSerializer,
+                           description='Ошибка регистрации'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           "SignUp example",
+                           description="Пример регистрации пользователя",
+                           value={
+                               'username': 'Some name',
+                               'password': 'Some secret password',
+                               'is_staff': False
+                           },
+                       )
+                   ]
+                   )
     def create(self, request: Request, *args, **kwargs) -> Response:
         try:
             serializer = self.serializer_class(data=request.data)
@@ -71,6 +112,27 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Получение токена по имени и паролю.
+    @extend_schema(summary='Получение токена по имени и паролю',
+                   request=UserSerializer,
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessTokenRequest,
+                           description='Успешное получение токена'),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404ResponseSerializer,
+                           description='Пользователь не зарегистрирован'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           "Token obtain example",
+                           description="Пример вводимых логина и пароля",
+                           value={
+                               'username': 'Some name',
+                               'password': 'Some secret password',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.POST, ], detail=False, url_path='get-token')
     def get_token(self, request: Request) -> Response:
         user = authenticate(request,
@@ -84,9 +146,29 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         return Response({'message': f'Пользователь {request.data['username']} не зарегистрирован'},
-                        status=status.HTTP_400_BAD_REQUEST, )
+                        status=status.HTTP_404_NOT_FOUND, )
 
     # Обновление данных пользователя. Можно изменить только пароль.
+    @extend_schema(summary='Изменение пароля пользователя',
+                   responses={
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                           response=UserSerializer,
+                           description='Успешное изменение пароля'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400ResponseSerializer,
+                           description='Ошибка обновление профиля'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           "Password update",
+                           description="Пример вводимого пароля",
+                           value={
+                               'password': 'Some secret password',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.PATCH, ], detail=False, url_path='update-profile',
             permission_classes=[IsAuthenticated])
     def update_profile(self, request: Request, *args, **kwargs) -> Response:
@@ -110,8 +192,19 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Удаление данных пользователя (своего профиля).
+    @extend_schema(summary='Удаление профиля пользователя',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное удаление профиля'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404ResponseSerializer,
+                           description='Ошибка удаления профиля'),
+                   },
+                   )
     @action(methods=[HTTPMethod.DELETE, ], detail=False, url_path='delete-profile',
-            permission_classes=[IsAuthenticated])
+            permission_classes=[IsAuthenticated, ])
     def delete_profile(self, request: Request, *args, **kwargs) -> Response:
         try:
             instance = User.objects.get(username=request.user)
@@ -127,6 +220,17 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_404_NOT_FOUND, )
 
     # Изменение статуса пользователя (апгрейд до администратора)
+    @extend_schema(summary='Изменение статуса пользователя',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное изменение статуса профиля'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404ResponseSerializer,
+                           description='Профиль не найден'),
+                   },
+                   )
     @action(methods=[HTTPMethod.GET, ], detail=True, url_path='upgrade-profile',
             permission_classes=[IsAdminUser, ])
     def upgrade_profile(self, request: Request, *args, **kwargs) -> Response:
@@ -145,6 +249,30 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_404_NOT_FOUND, )
 
     # Изменение должности пользователя (доступно только генеральному менеджеру)
+    @extend_schema(summary='Изменение должности пользователя',
+                   request=ProfileSerializer,
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное изменение должности профиля'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404ResponseSerializer,
+                           description='Профиль не найден'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400ResponseSerializer,
+                           description='Ошибка обновления профиля'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           "Position update",
+                           description="Пример вводимой должности сотрудника",
+                           value={
+                               'position': 'EMPLOYEE/MANAGER',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='change-position-profile',
             permission_classes=[IsAdminUser, ])
     def change_profile_position(self, request: Request, *args, **kwargs) -> Response:
@@ -176,6 +304,29 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Добавление/Изменение компании пользователя (доступно только менеджеру)
+    @extend_schema(summary='Добавление сотрудника в компанию ',
+                   responses={
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное добавление сотрудника в компанию'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404ResponseSerializer,
+                           description='Профиль не найден'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400ResponseSerializer,
+                           description='Ошибка обновления профиля'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           "Company transfer",
+                           description="Пример вводимого ID команды",
+                           value={
+                               'team': '1',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='add-profile-to-company',
             permission_classes=[IsAdminUser, ])
     def change_profile_team(self, request: Request, *args, **kwargs) -> Response:

@@ -17,6 +17,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'password', 'is_staff', ]
         model = User
 
+        extra_kwargs = {
+            'username': {'default': 'Some name'},
+        }
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     """
@@ -25,8 +29,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     detailed_position = serializers.ChoiceField(source='get_position_display',
                                                 choices=Position.labels,
                                                 read_only=True)
-    name = serializers.CharField(source='user.username', read_only=True)
-    company_name = serializers.CharField(source='team.name', read_only=True)
+    name = serializers.CharField(source='user.username', read_only=True, default='Some name')
+    company_name = serializers.CharField(source='team.name', read_only=True, default='Dream team')
     team = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
@@ -38,3 +42,24 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id': {'read_only': True},
             'position': {'write_only': True},
         }
+
+
+class SuccessTokenRequest(serializers.Serializer):
+    message = serializers.CharField(default='Token для текущего пользователя')
+    token = serializers.CharField(default='Some secret token here...')
+
+
+class SuccessResponse(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+
+
+class Error400ResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default='Введенные данные некорректны')
+
+
+class Error403ResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default='Такой пользователь уже существует')
+
+
+class Error404ResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default='Данные не найдены')

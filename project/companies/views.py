@@ -1,6 +1,7 @@
 from http import HTTPMethod
 
 from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
@@ -11,6 +12,7 @@ from companies.models import Company, Structure, StructureMember
 from companies.serializers import CompanySerializer, StructureSerializer, StructureMemberSerializer
 
 
+@extend_schema(tags=['Company'])
 class CompanyViewSet(viewsets.ModelViewSet):
     """
     Класс для операций с Компаниями.
@@ -19,6 +21,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
     queryset = Company.objects.all()
     permission_classes = [IsAdminUser]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get', 'post', 'delete', ]
 
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         super().destroy(request, *args, **kwargs)
@@ -26,6 +30,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK, )
 
 
+@extend_schema(tags=['Structure'])
 class StructureViewSet(viewsets.ModelViewSet):
     """
     Класс для операций с Организационными структурами.
@@ -34,6 +39,8 @@ class StructureViewSet(viewsets.ModelViewSet):
     serializer_class = StructureSerializer
     queryset = Structure.objects.all()
     permission_classes = [IsAdminUser]
+    # Разрешенные методы класса
+    http_method_names = ['head', 'options', 'get', 'post', 'delete', ]
 
     # Добавление члена организационной структуры
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='add-member', )
