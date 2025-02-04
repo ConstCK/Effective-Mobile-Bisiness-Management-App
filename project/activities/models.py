@@ -6,6 +6,9 @@ from .constants import TaskStatuses
 
 
 class News(models.Model):
+    """
+    Таблица созданных новостей
+    """
     title = models.CharField(max_length=128, verbose_name='Заголовок новости')
     content = models.TextField(verbose_name='Содержание новости')
     author = models.ForeignKey(Profile, on_delete=models.CASCADE,
@@ -20,6 +23,9 @@ class News(models.Model):
 
 
 class Task(models.Model):
+    """
+    Таблица назначенных задач
+    """
     name = models.CharField(max_length=128, verbose_name='Название задачи')
     assigned_by = models.ForeignKey(Profile, on_delete=models.CASCADE,
                                     related_name='created_task',
@@ -41,6 +47,9 @@ class Task(models.Model):
 
 
 class TaskStatus(models.Model):
+    """
+    Таблица статусов выполнения задач
+    """
     task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name='Задача')
     status = models.CharField(max_length=16, choices=TaskStatuses.choices,
                               default=TaskStatuses.PENDING, verbose_name='Статус задачи')
@@ -57,6 +66,9 @@ class TaskStatus(models.Model):
 
 
 class TaskEstimation(models.Model):
+    """
+    Таблица оценок выполнения задач
+    """
     task = models.OneToOneField(Task, on_delete=models.CASCADE, verbose_name='Задача')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата выставления оценки',
                                       )
@@ -81,6 +93,9 @@ class TaskEstimation(models.Model):
 
 
 class Meeting(models.Model):
+    """
+    Таблица назначенных встреч
+    """
     organizer = models.ForeignKey(Profile, on_delete=models.CASCADE,
                                   related_name='organized_meetings',
                                   verbose_name='Организатор встречи')
@@ -99,6 +114,9 @@ class Meeting(models.Model):
 
 
 class Calendar(models.Model):
+    """
+    Таблица зарезервированных периодов времени для исполнителей и их руководителей
+    """
     name = models.CharField(max_length=64, verbose_name='Название дела')
     owner = models.ForeignKey(Profile, on_delete=models.CASCADE,
                               related_name='calendars',

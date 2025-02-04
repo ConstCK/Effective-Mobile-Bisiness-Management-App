@@ -7,6 +7,9 @@ from activities.models import News, Task, TaskStatus, TaskEstimation, Meeting, C
 
 
 class NewsSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели News
+    """
     id = serializers.IntegerField(read_only=True)
     author_name = serializers.CharField(source='author.user.username', read_only=True)
 
@@ -16,6 +19,9 @@ class NewsSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Task
+    """
     id = serializers.IntegerField(read_only=True)
     created_at = serializers.DateTimeField(default=datetime.datetime.now())
 
@@ -34,6 +40,9 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class TaskStatusSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели TaskStatus
+    """
     id = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -46,14 +55,20 @@ class TaskStatusSerializer(serializers.ModelSerializer):
 
 
 class TaskEstimationSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели TaskEstimation
+    """
     id = serializers.IntegerField(read_only=True)
 
     class Meta:
-        fields = ['id', 'created_at','deadline_meeting', 'completeness', 'quality']
+        fields = ['id', 'created_at', 'deadline_meeting', 'completeness', 'quality']
         model = TaskEstimation
 
 
 class MeetingSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Meeting
+    """
     id = serializers.IntegerField(read_only=True)
     organizer_name = serializers.CharField(source='organizer.user.username', read_only=True)
 
@@ -72,6 +87,9 @@ class MeetingSerializer(serializers.ModelSerializer):
 
 
 class CalendarSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Calendar
+    """
     id = serializers.IntegerField(read_only=True)
 
     class Meta:

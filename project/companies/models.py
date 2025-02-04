@@ -2,6 +2,9 @@ from django.db import models
 
 
 class Structure(models.Model):
+    """
+    Таблица созданных организационных структур
+    """
     name = models.CharField(max_length=128, unique=True,
                             verbose_name='Название организационной структуры')
 
@@ -14,6 +17,9 @@ class Structure(models.Model):
 
 
 class StructureMember(models.Model):
+    """
+    Таблица членов в организационных структурах
+    """
     structure = models.ForeignKey(Structure, on_delete=models.CASCADE,
                                   related_name='members',
                                   verbose_name='Название организационной структуры')
@@ -34,6 +40,9 @@ class StructureMember(models.Model):
 
 
 class Company(models.Model):
+    """
+    Таблица созданных компаний (команд)
+    """
     name = models.CharField(max_length=128, unique=True, verbose_name='Название компании')
     structure = models.ForeignKey(Structure, on_delete=models.PROTECT,
                                   related_name='companies',

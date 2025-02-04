@@ -6,6 +6,9 @@ from companies.models import Company
 
 
 class Profile(models.Model):
+    """
+    Таблица профилей пользователей
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     team = models.ForeignKey(Company, on_delete=models.PROTECT,null=True,
                              related_name='profiles', verbose_name='Компания')

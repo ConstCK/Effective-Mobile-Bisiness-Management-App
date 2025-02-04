@@ -3,10 +3,12 @@ from rest_framework import serializers
 
 from accounts.constants import Position
 from accounts.models import Profile
-from activities.models import Task
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели User
+    """
     id = serializers.IntegerField(read_only=True)
     is_staff = serializers.BooleanField(default=False)
     password = serializers.CharField(write_only=True, min_length=8)
@@ -17,9 +19,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    # position = serializers.ChoiceField(source='get_position_display',
-    #                                    choices=Position,
-    #                                    write_only=True)
+    """
+    Сериализатор для модели Profile
+    """
     detailed_position = serializers.ChoiceField(source='get_position_display',
                                                 choices=Position.labels,
                                                 read_only=True)
@@ -36,4 +38,3 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id': {'read_only': True},
             'position': {'write_only': True},
         }
-

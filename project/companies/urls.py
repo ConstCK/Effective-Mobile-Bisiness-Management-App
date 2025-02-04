@@ -6,5 +6,4 @@ router = routers.DefaultRouter()
 router.register('companies', CompanyViewSet)
 router.register('structures', StructureViewSet)
 
-
 urlpatterns = router.urls

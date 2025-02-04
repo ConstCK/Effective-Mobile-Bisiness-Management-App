@@ -45,6 +45,7 @@ class StructureViewSet(viewsets.ModelViewSet):
             structure = Structure.objects.get(pk=kwargs.get('pk'))
             instance.structure = structure
             instance.save()
+
             return Response({'message': f'Успешное создание объекта.',
                              'data': serializer.data
                              },
@@ -61,7 +62,7 @@ class StructureViewSet(viewsets.ModelViewSet):
         try:
             instance = StructureMember.objects.get(pk=kwargs.get('pk'))
             instance.delete()
-            instance.save()
+
             return Response({'message': f'Успешное удаление объекта.'},
                             status=status.HTTP_200_OK, )
 

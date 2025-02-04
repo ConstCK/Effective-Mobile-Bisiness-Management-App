@@ -4,6 +4,9 @@ from companies.models import Company, Structure, StructureMember
 
 
 class StructureSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Structure
+    """
     id = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -12,6 +15,9 @@ class StructureSerializer(serializers.ModelSerializer):
 
 
 class StructureMemberSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели StructureMember
+    """
     id = serializers.IntegerField(read_only=True)
     structure = serializers.CharField(source='structure.name', read_only=True)
 
@@ -21,6 +27,9 @@ class StructureMemberSerializer(serializers.ModelSerializer):
 
 
 class CompanySerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Company
+    """
     id = serializers.IntegerField(read_only=True)
     structure_detail = serializers.CharField(source='structure', read_only=True)
 

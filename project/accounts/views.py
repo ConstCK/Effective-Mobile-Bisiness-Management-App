@@ -1,7 +1,5 @@
-import datetime
 from http import HTTPMethod
 
-import requests
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -50,6 +48,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             else:
                 profile = Profile.objects.create(user=user, is_administrator=user.is_staff, )
 
+            # Присвоение должности профилю пользователя
             if user.is_staff:
                 profile.position = 'MANAGER'
                 profile.save()
@@ -74,7 +73,6 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     # Получение токена по имени и паролю.
     @action(methods=[HTTPMethod.POST, ], detail=False, url_path='get-token')
     def get_token(self, request: Request) -> Response:
-
         user = authenticate(request,
                             username=request.data['username'],
                             password=request.data['password'])
@@ -84,6 +82,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': f'Token для пользователя {user.username}',
                              'token': token.key},
                             status=status.HTTP_200_OK, )
+
         return Response({'message': f'Пользователь {request.data['username']} не зарегистрирован'},
                         status=status.HTTP_400_BAD_REQUEST, )
 
@@ -91,7 +90,6 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     @action(methods=[HTTPMethod.PATCH, ], detail=False, url_path='update-profile',
             permission_classes=[IsAuthenticated])
     def update_profile(self, request: Request, *args, **kwargs) -> Response:
-
         try:
             user = request.user
             serializer = self.serializer_class(data=request.data, partial=True)
@@ -105,6 +103,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                                       'is_staff': user.is_staff},
                              },
                             status=status.HTTP_202_ACCEPTED, )
+
         except Exception as error:
             return Response({'message': f'Ошибка обновления данных профиля.'
                                         f'Детали ошибки: {error}.'},
@@ -122,6 +121,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
 
                 return Response({'message': f'Данные профиля успешно удалены.'},
                                 status=status.HTTP_200_OK, )
+
         except Exception as error:
             return Response({'message': f'Профиль с указанным ID не существует.{error}'},
                             status=status.HTTP_404_NOT_FOUND, )
@@ -136,6 +136,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             instance.user.is_staff = True
             instance.save()
             instance.user.save()
+
             return Response({'message': f'{instance.user} - теперь администратор.'},
                             status=status.HTTP_200_OK, )
 
@@ -147,9 +148,11 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='change-position-profile',
             permission_classes=[IsAdminUser, ])
     def change_profile_position(self, request: Request, *args, **kwargs) -> Response:
+        # Проверка полномочий для текущего пользователя
         if request.user.profile.position != 'BOSS':
             return Response({'message': 'Смена должностей сотрудников доступна только для генерального менеджера'},
                             status=status.HTTP_403_FORBIDDEN, )
+        # Проверка новой назначаемой должности
         if request.data['position'] == 'BOSS':
             return Response({'message': 'Ошибка...Может быть только один генеральный менеджер.'},
                             status=status.HTTP_400_BAD_REQUEST, )
@@ -172,11 +175,10 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                                         f'Детали ошибки: {error}'},
                             status=status.HTTP_400_BAD_REQUEST, )
 
-    # Изменение компании пользователя (доступно только менеджеру)
+    # Добавление/Изменение компании пользователя (доступно только менеджеру)
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='add-profile-to-company',
             permission_classes=[IsAdminUser, ])
     def change_profile_team(self, request: Request, *args, **kwargs) -> Response:
-
         try:
             instance = Profile.objects.filter(pk=kwargs.get('pk'), user__is_active=True).first()
             company = Company.objects.get(pk=request.data['team'])
@@ -204,7 +206,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
         return Response({'message': 'У Вас недостаточно прав для получения этой информации'},
                         status=status.HTTP_403_FORBIDDEN)
 
-    # Получение всех своих оценок.
+    # Получение своих оценок (всех/средние-квартальных/в рамках компании).
     @action([HTTPMethod.GET, ], detail=False, url_path='get-marks',
             permission_classes=[IsAuthenticated])
     def get_marks(self, request: Request, *args, **kwargs) -> Response:
@@ -212,13 +214,17 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             quarter = self.determine_quarter()
             tasks = Task.objects.filter(assigned_to=Profile.objects.get(user=request.user))
 
+            # Проверка передаваемых параметров квартальный отчет/в рамках компании
             if request.query_params.get('options') == 'quarter':
                 tasks = tasks.filter(taskestimation__created_at__month__gte=quarter[0],
                                      taskestimation__created_at__month__lte=quarter[1], )
                 result = tasks.aggregate(
-                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting', default=0), 2),
-                    average_completeness=Round(Avg('taskestimation__completeness', default=0), 2),
-                    average_quality=Round(Avg('taskestimation__quality', default=0), 2)
+                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting',
+                                                       default=0), 2),
+                    average_completeness=Round(Avg('taskestimation__completeness',
+                                                   default=0), 2),
+                    average_quality=Round(Avg('taskestimation__quality',
+                                              default=0), 2)
                 )
 
                 return Response({'message': 'Средние оценки исполнителя за текущий квартал',
@@ -227,6 +233,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                                           'Качество выполнения': result['average_quality']}},
                                 status=status.HTTP_200_OK)
 
+            # Проверка передаваемых параметров квартальный отчет/в рамках компании
             if request.query_params.get('options') == 'company':
                 current_team = Profile.objects.get(user=request.user).team
                 profiles = Profile.objects.filter(team=current_team)
@@ -242,12 +249,14 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                                           'Завершение задачи': result['average_completeness'],
                                           'Качество выполнения': result['average_quality']}},
                                 status=status.HTTP_200_OK)
+            # Все оценки
             else:
                 all_marks = TaskEstimation.objects.filter(task__in=tasks)
                 result = TaskEstimationSerializer(all_marks, many=True)
                 return Response({'message': 'Все оценки пользователя за задачи',
                                  'data': result.data},
                                 status=status.HTTP_200_OK)
+
         except Exception as error:
             return Response({'message': f'Не удалось отобразить список оценок.'
                                         f'Детали ошибки: {error}'},

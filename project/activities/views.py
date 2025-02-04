@@ -35,6 +35,7 @@ class NewsViewSet(viewsets.ModelViewSet, ):
             news.author = Profile.objects.filter(user=request.user, user__is_active=True).first()
             news.save()
             result = self.serializer_class(news, many=False)
+
             return Response({'message': 'Успешное создания новости.',
                              'data': result.data},
                             status=status.HTTP_201_CREATED, )
@@ -59,26 +60,32 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
         try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
+
+            # Проверка на занятость руководителя в указанные даты встречи
             if not self.is_free(request.user, serializer.validated_data['start_at'],
                                 serializer.validated_data['end_at']):
                 raise BusyException('Time spot is busy issue')
+
             meeting = Meeting(**serializer.validated_data)
             meeting.organizer = (Profile.objects.filter(user=request.user, user__is_active=True)
                                  .first())
             meeting.save()
+
+            # Добавление записи о занятом периоде времени в календарь
             Calendar.objects.create(name=f'Встреча {meeting.id}',
                                     owner=Profile.objects.get(user=request.user),
                                     start_at=meeting.start_at,
                                     end_at=meeting.end_at)
+
             result = self.serializer_class(meeting, many=False)
 
             return Response({'message': 'Успешное создания встречи.',
                              'data': result.data},
                             status=status.HTTP_201_CREATED, )
+
         except BusyException:
             return Response({'message': 'В это время Вы не сможете провести встречу.'},
                             status=status.HTTP_400_BAD_REQUEST, )
-
         except Exception as error:
             return Response({'message': f'Ошибка создания встречи.'
                                         f'Детали ошибки: {error}.'},
@@ -87,6 +94,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
     # Отмена встречи
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         try:
+            # Очистка занятой встречей записи в календаре
             self.clear_calendar(kwargs.get('pk'))
             super().destroy(request, *args, **kwargs)
 
@@ -97,7 +105,6 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': f'Ошибка удаление встречи.'
                                         f'Неверный ID встречи.'},
                             status=status.HTTP_404_NOT_FOUND, )
-
         except Exception as error:
             return Response({'message': f'Ошибка удаление встречи.'
                                         f'Детали ошибки: {error}.'},
@@ -112,18 +119,23 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
             participant = Profile.objects.filter(user=user, user__is_acrive=True).first()
             meeting = Meeting.objects.get(id=kwargs.get('pk'))
 
+            # Проверка на принадлежность к одной команде руководителя и исполнителя
             if not self.is_same_team(request.user, user):
                 raise AlienException('Not the same company members issue')
 
+            # Проверка на занятость исполнителя в указанные даты встречи
             if not self.is_free(user, meeting.start_at, meeting.end_at):
                 raise BusyException('Time spot is busy issue')
 
             meeting.participants.add(participant)
             meeting.save()
+
+            # Добавление записи о занятом периоде времени в календарь
             Calendar.objects.create(name=f'Встреча {meeting.id}',
                                     owner=participant,
                                     start_at=meeting.start_at,
                                     end_at=meeting.end_at)
+
             return Response({'message': f'Успешное добавление участника {participant}'
                                         f' к встрече № {kwargs.get('pk')}.'
                              }, status=status.HTTP_201_CREATED, )
@@ -155,6 +167,8 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
 
             meeting.participants.remove(participant)
             meeting.save()
+
+            # Удаление записи о занятом периоде времени из календаря
             calendar = Calendar.objects.get(name=f'Встреча {meeting.id}',
                                             owner=participant,
                                             start_at=meeting.start_at,
@@ -170,17 +184,10 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': f'Ошибка удаления участника встречи.'
                                         f'Неверный ID встречи или имя участника.'},
                             status=status.HTTP_404_NOT_FOUND, )
-
         except Exception as error:
             return Response({'message': f'Ошибка добавления участника встречи.'
                                         f'Детали ошибки: {error}.'},
                             status=status.HTTP_400_BAD_REQUEST, )
-
-        # Изменение времени встречи (???)
-        @action(methods=[HTTPMethod.DELETE, ], detail=True, url_path='update-meeting',
-                permission_classes=[IsAdminUser, ])
-        def update_meeting(self, request: Request, *args, **kwargs) -> Response:
-            pass
 
 
 class CalendarViewSet(viewsets.ModelViewSet):
@@ -197,6 +204,7 @@ class CalendarViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=request.user, user__is_active=True).first()
         today = datetime.date.today()
 
+        # Выбор отображения записей календаря в зависимости от указанного в query params периода
         if request.query_params['period'] == 'daily':
             calendar = Calendar.objects.filter(owner=profile, start_at__date=today)
         elif request.query_params['period'] == 'monthly':
@@ -229,6 +237,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
 
+            # Проверка на принадлежность к одной команде руководителя и исполнителя
             if not self.is_same_team(request.user, executor):
                 raise AlienException('Not the same company members issue')
 
@@ -238,10 +247,12 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             task.save()
             result = TaskSerializer(task)
 
+            # Добавление записи в календарь о времени выполнения задачи
             Calendar.objects.create(name=f'Задача {result.data['id']}',
                                     owner=Profile.objects.get(user=executor),
                                     start_at=created_at,
                                     end_at=serializer.validated_data['deadline'])
+
             TaskStatus.objects.create(task=task, status='PENDING')
 
             return Response({'message': 'Успешное создания задачи.',
@@ -267,24 +278,29 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             task = Task.objects.get(id=kwargs.get('pk'))
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
-            if serializer.data['assigned_to']:
-                if not self.is_same_team(request.user,
-                                         User.objects.get(profile__id=request.data['assigned_to'])):
-                    raise AlienException('Not the same company members issue')
-                calendar = Calendar.objects.get(name=f'Задача {kwargs.get('pk')}')
-                calendar.delete()
-                task.assigned_to = serializer.validated_data['assigned_to']
-            if serializer.data['name']:
-                task.name = serializer.validated_data['name']
-            if serializer.data['deadline']:
-                task.deadline = serializer.validated_data['deadline']
 
+            # Проверка на принадлежность к одной команде руководителя и исполнителя
+            if not self.is_same_team(request.user,
+                                     User.objects.get(profile__id=request.data['assigned_to'])):
+                raise AlienException('Not the same company members issue')
+
+            # Удаление записи из календаря о времени выполнения задачи для предыдущего исполнителя
+            calendar = Calendar.objects.get(name=f'Задача {kwargs.get('pk')}')
+            calendar.delete()
+
+            task.assigned_to = serializer.validated_data['assigned_to']
+            task.name = serializer.validated_data['name']
+            task.deadline = serializer.validated_data['deadline']
             task.save()
+
             result = TaskSerializer(task)
+
+            # Добавление записи в календарь о новой задаче
             Calendar.objects.create(name=f'Задача {kwargs.get('pk')}',
                                     owner=task.assigned_to,
                                     start_at=task.created_at,
                                     end_at=task.deadline, )
+
             return Response({'message': 'Успешное обновление задачи.',
                              'data': result.data},
                             status=status.HTTP_202_ACCEPTED, )
@@ -313,6 +329,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
 
             return Response({'message': 'Успешное удаление задачи.'},
                             status=status.HTTP_200_OK, )
+
         except ObjectDoesNotExist:
             return Response({'message': f'Ошибка удаления задачи.'
                                         f'Неверный ID задачи.'},
@@ -323,9 +340,11 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             permission_classes=[IsAuthenticated, ])
     def update_status(self, request: Request, *args, **kwargs) -> Response:
         try:
+            # Поверка на принадлежность задачи исполнителю
             if not self.is_task_executor(kwargs.get('pk'),
                                          User.objects.get(username=request.user)):
                 raise AlienException('Not correct executor issue')
+
             serializer = TaskStatusSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             task_status = TaskStatus.objects.get(task=Task.objects.get(pk=kwargs.get('pk')))
@@ -334,6 +353,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             task_status.save()
 
             result = TaskStatusSerializer(task_status)
+
             return Response({'message': 'Успешное обновление статуса задачи.',
                              'data': result.data},
                             status=status.HTTP_202_ACCEPTED, )
@@ -342,12 +362,10 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': 'Ошибка обновления статуса задачи.'
                                         'Обновления статуса доступно только для сотрудника задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
-
         except ObjectDoesNotExist:
             return Response({'message': f'Ошибка обновления статуса задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
-
         except Exception as error:
             return Response({'message': f'Ошибка обновления статуса задачи.'
                                         f'Детали ошибки: {error}.'},
@@ -357,9 +375,11 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
     @action([HTTPMethod.POST, ], detail=True, url_path='estimate-task',)
     def estimate_task(self, request: Request, *args, **kwargs) -> Response:
         try:
+            # Поверка на принадлежность задачи профилю, присвоившую ее
             if not self.is_task_assignor(kwargs.get('pk'),
                                          User.objects.get(username=request.user)):
                 raise AlienException('Not correct assignor issue')
+
             serializer = TaskEstimationSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             task_estimation = TaskEstimation(**serializer.data)
@@ -376,12 +396,10 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Оценка доступна только для начальника,'
                                         ' назначившего задачу задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
-
         except ObjectDoesNotExist:
             return Response({'message': f'Ошибка оценки задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
-
         except Exception as error:
             return Response({'message': f'Ошибка оценки задачи.'
                                         f'Детали ошибки: {error}.'},
