@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from accounts.constants import Position
 from accounts.models import Profile
+from activities.models import Task
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,9 +17,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    position = serializers.ChoiceField(source='get_position_display',
-                                       choices=Position,
-                                       write_only=True)
+    # position = serializers.ChoiceField(source='get_position_display',
+    #                                    choices=Position,
+    #                                    write_only=True)
     detailed_position = serializers.ChoiceField(source='get_position_display',
                                                 choices=Position.labels,
                                                 read_only=True)
@@ -33,4 +34,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'team': {'write_only': True},
             'id': {'read_only': True},
+            'position': {'write_only': True},
         }
+

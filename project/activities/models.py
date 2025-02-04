@@ -36,6 +36,8 @@ class Task(models.Model):
     class Meta:
         verbose_name = 'Задача'
         verbose_name_plural = 'Задачи'
+        constraints = (models.UniqueConstraint(fields=('name', 'assigned_to'),
+                                               name='Unique task constraint'),)
 
 
 class TaskStatus(models.Model):
@@ -51,11 +53,13 @@ class TaskStatus(models.Model):
         verbose_name = 'Статус задачи'
         verbose_name_plural = 'Статусы задач'
         constraints = (models.UniqueConstraint(fields=('task', 'status'),
-                                               name='Unique task constraint'),)
+                                               name='Unique task status constraint'),)
 
 
 class TaskEstimation(models.Model):
     task = models.OneToOneField(Task, on_delete=models.CASCADE, verbose_name='Задача')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата выставления оценки',
+                                      )
     deadline_meeting = models.PositiveSmallIntegerField(verbose_name='Соблюдение сроков задачи',
                                                         validators=(MaxValueValidator(10),
                                                                     MinValueValidator(1)))

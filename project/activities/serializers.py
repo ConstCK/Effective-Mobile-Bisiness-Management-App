@@ -1,7 +1,8 @@
+import datetime
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from accounts.serializers import ProfileSerializer
 from activities.models import News, Task, TaskStatus, TaskEstimation, Meeting, Calendar
 
 
@@ -16,16 +17,20 @@ class NewsSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
+    created_at = serializers.DateTimeField(default=datetime.datetime.now())
 
     def validate(self, data):
-        if data['created_at'] >= data['deadline']:
+        if data['created_at'].timestamp() >= data['deadline'].timestamp():
             raise ValidationError('Task beginning must be earlier than end of it...')
         return data
 
     class Meta:
         fields = ['id', 'name', 'assigned_by', 'assigned_to', 'created_at', 'deadline']
         model = Task
+
+        extra_kwargs = {
+            'assigned_by': {'read_only': True},
+        }
 
 
 class TaskStatusSerializer(serializers.ModelSerializer):
@@ -35,12 +40,16 @@ class TaskStatusSerializer(serializers.ModelSerializer):
         fields = ['id', 'task', 'status', 'comment']
         model = TaskStatus
 
+        extra_kwargs = {
+            'task': {'read_only': True},
+        }
+
 
 class TaskEstimationSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
 
     class Meta:
-        fields = ['id', 'deadline_meeting', 'completeness', 'quality']
+        fields = ['id', 'created_at','deadline_meeting', 'completeness', 'quality']
         model = TaskEstimation
 
 
@@ -49,8 +58,8 @@ class MeetingSerializer(serializers.ModelSerializer):
     organizer_name = serializers.CharField(source='organizer.user.username', read_only=True)
 
     def validate(self, data):
-        if data['start_at'] >= data['end_at']:
-            raise ValidationError('Meeting beginning must be earlier than end of it...')
+        if data['start_at'].timestamp() >= data['end_at'].timestamp():
+            raise ValidationError('Task beginning must be earlier than end of it...')
         return data
 
     class Meta:
