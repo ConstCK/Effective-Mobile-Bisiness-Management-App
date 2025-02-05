@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from accounts.constants import Position
 from accounts.models import Profile
+from activities.serializers import TaskEstimationSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,6 +52,11 @@ class SuccessTokenRequest(serializers.Serializer):
 
 class SuccessResponse(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
+
+
+class SuccessResponseWithData(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = TaskEstimationSerializer()
 
 
 class Error400ResponseSerializer(serializers.Serializer):

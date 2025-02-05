@@ -16,21 +16,12 @@ from rest_framework.response import Response
 
 from accounts.models import Profile
 from accounts.serializers import UserSerializer, ProfileSerializer, Error400ResponseSerializer, \
-    Error403ResponseSerializer, Error404ResponseSerializer, SuccessTokenRequest, SuccessResponse
+    Error403ResponseSerializer, Error404ResponseSerializer, SuccessTokenRequest, SuccessResponse, \
+    SuccessResponseWithData
 from activities.models import Task, TaskEstimation
 from activities.serializers import TaskEstimationSerializer
 from activities.utils import Service
 from companies.models import Company
-
-parameters = [
-    OpenApiParameter(
-        name='Auth header',
-        location=OpenApiParameter.HEADER,
-        description='Токен для авторизации',
-        required=True,
-        type=int
-    ),
-]
 
 
 @extend_schema(tags=['Profile'])
@@ -46,6 +37,21 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     permission_classes = [AllowAny, ]
     # Разрешенные методы класса
     http_method_names = ['get', 'head', 'post', 'patch', 'delete', 'options']
+
+    # Отключение метода для ViewSet.
+    @extend_schema(summary='Метод недоступен!')
+    def partial_update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    # Отключение метода для ViewSet.
+    @extend_schema(summary='Метод недоступен!')
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    # Отключение метода для ViewSet.
+    @extend_schema(summary='Метод недоступен!')
+    def retrieve(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     # Регистрация нового пользователя.
     @extend_schema(summary='Регистрация нового пользователя',
@@ -304,7 +310,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Добавление/Изменение компании пользователя (доступно только менеджеру)
-    @extend_schema(summary='Добавление сотрудника в компанию ',
+    @extend_schema(summary='Добавление сотрудника в компанию',
                    responses={
                        status.HTTP_202_ACCEPTED: OpenApiResponse(
                            response=SuccessResponse,
@@ -319,8 +325,8 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                    },
                    examples=[
                        OpenApiExample(
-                           "Company transfer",
-                           description="Пример вводимого ID команды",
+                           'Company transfer',
+                           description='Пример вводимого ID команды',
                            value={
                                'team': '1',
                            },
@@ -348,6 +354,17 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Получение списка профилей для администратора
+    @extend_schema(summary='Получение списка профилей',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=ProfileSerializer,
+                           description='Успешное получение данных сотрудников'
+                       ),
+                       status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                           response=Error403ResponseSerializer,
+                           description='Нет прав на получение данных'),
+                   },
+                   )
     def list(self, request: Request, *args, **kwargs) -> Response:
         if request.user.is_staff:
             query = Profile.objects.filter(user__is_active=True)
@@ -358,6 +375,36 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                         status=status.HTTP_403_FORBIDDEN)
 
     # Получение своих оценок (всех/средние-квартальных/в рамках компании).
+    @extend_schema(summary='Получение своих оценок',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponseWithData,
+                           description='Успешное получение своих оценок'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400ResponseSerializer,
+                           description='Ошибка получения данных'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='options',
+                           location=OpenApiParameter.QUERY,
+                           description='Параметр для определения вывода статистики'
+                                       ' (quarter - для квартальной/company - в рамках компании',
+                           required=False,
+                           type=str
+                       ),
+                   ],
+                   examples=[
+                       OpenApiExample(
+                           'Statistic options',
+                           description='Пример вводимого параметра для получения статистики',
+                           value={
+                               'options': 'quarter/company',
+                           },
+                       )
+                   ]
+                   )
     @action([HTTPMethod.GET, ], detail=False, url_path='get-marks',
             permission_classes=[IsAuthenticated])
     def get_marks(self, request: Request, *args, **kwargs) -> Response:
@@ -404,6 +451,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             else:
                 all_marks = TaskEstimation.objects.filter(task__in=tasks)
                 result = TaskEstimationSerializer(all_marks, many=True)
+
                 return Response({'message': 'Все оценки пользователя за задачи',
                                  'data': result.data},
                                 status=status.HTTP_200_OK)
