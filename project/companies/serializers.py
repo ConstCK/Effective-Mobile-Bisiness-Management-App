@@ -12,6 +12,9 @@ class StructureSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'name']
         model = Structure
+        extra_kwargs = {
+            'name': {'default': 'Линейная структура'},
+        }
 
 
 class StructureMemberSerializer(serializers.ModelSerializer):
@@ -37,5 +40,11 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'structure', 'structure_detail']
         model = Company
         extra_kwargs = {
-            'structure': {'write_only': True},
+            'structure': {'write_only': True, 'default': 'ID компании'},
+            'name': {'default': 'Название компании'},
         }
+
+
+class SuccessResponseWithMember(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = StructureMemberSerializer()

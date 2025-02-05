@@ -15,9 +15,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.models import Profile
-from accounts.serializers import UserSerializer, ProfileSerializer, Error400ResponseSerializer, \
-    Error403ResponseSerializer, Error404ResponseSerializer, SuccessTokenRequest, SuccessResponse, \
-    SuccessResponseWithData
+from accounts.serializers import UserSerializer, ProfileSerializer, Error400Response, \
+    Error403Response, Error404Response, SuccessResponse, \
+    SuccessResponseWithMarks, SuccessTokenResponse, SuccessResponseWithUser
 from activities.models import Task, TaskEstimation
 from activities.serializers import TaskEstimationSerializer
 from activities.utils import Service
@@ -61,16 +61,16 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            response=ProfileSerializer,
                            description='Успешная регистрация пользователя'),
                        status.HTTP_403_FORBIDDEN: OpenApiResponse(
-                           response=Error403ResponseSerializer,
+                           response=Error403Response,
                            description='Такой пользователь уже существует'),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400ResponseSerializer,
+                           response=Error400Response,
                            description='Ошибка регистрации'),
                    },
                    examples=[
                        OpenApiExample(
-                           "SignUp example",
-                           description="Пример регистрации пользователя",
+                           'SignUp example',
+                           description='Пример регистрации пользователя',
                            value={
                                'username': 'Some name',
                                'password': 'Some secret password',
@@ -122,16 +122,16 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                    request=UserSerializer,
                    responses={
                        status.HTTP_200_OK: OpenApiResponse(
-                           response=SuccessTokenRequest,
+                           response=SuccessTokenResponse,
                            description='Успешное получение токена'),
                        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-                           response=Error404ResponseSerializer,
+                           response=Error404Response,
                            description='Пользователь не зарегистрирован'),
                    },
                    examples=[
                        OpenApiExample(
-                           "Token obtain example",
-                           description="Пример вводимых логина и пароля",
+                           'Token obtain example',
+                           description='Пример вводимых логина и пароля',
                            value={
                                'username': 'Some name',
                                'password': 'Some secret password',
@@ -158,17 +158,17 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     @extend_schema(summary='Изменение пароля пользователя',
                    responses={
                        status.HTTP_202_ACCEPTED: OpenApiResponse(
-                           response=UserSerializer,
+                           response=SuccessResponseWithUser,
                            description='Успешное изменение пароля'
                        ),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400ResponseSerializer,
+                           response=Error400Response,
                            description='Ошибка обновление профиля'),
                    },
                    examples=[
                        OpenApiExample(
-                           "Password update",
-                           description="Пример вводимого пароля",
+                           'Password update',
+                           description='Пример вводимого пароля',
                            value={
                                'password': 'Some secret password',
                            },
@@ -205,7 +205,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            description='Успешное удаление профиля'
                        ),
                        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-                           response=Error404ResponseSerializer,
+                           response=Error404Response,
                            description='Ошибка удаления профиля'),
                    },
                    )
@@ -233,7 +233,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            description='Успешное изменение статуса профиля'
                        ),
                        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-                           response=Error404ResponseSerializer,
+                           response=Error404Response,
                            description='Профиль не найден'),
                    },
                    )
@@ -263,16 +263,16 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            description='Успешное изменение должности профиля'
                        ),
                        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-                           response=Error404ResponseSerializer,
+                           response=Error404Response,
                            description='Профиль не найден'),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400ResponseSerializer,
+                           response=Error400Response,
                            description='Ошибка обновления профиля'),
                    },
                    examples=[
                        OpenApiExample(
-                           "Position update",
-                           description="Пример вводимой должности сотрудника",
+                           'Position update',
+                           description='Пример вводимой должности сотрудника',
                            value={
                                'position': 'EMPLOYEE/MANAGER',
                            },
@@ -317,10 +317,10 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            description='Успешное добавление сотрудника в компанию'
                        ),
                        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-                           response=Error404ResponseSerializer,
+                           response=Error404Response,
                            description='Профиль не найден'),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400ResponseSerializer,
+                           response=Error400Response,
                            description='Ошибка обновления профиля'),
                    },
                    examples=[
@@ -361,7 +361,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            description='Успешное получение данных сотрудников'
                        ),
                        status.HTTP_403_FORBIDDEN: OpenApiResponse(
-                           response=Error403ResponseSerializer,
+                           response=Error403Response,
                            description='Нет прав на получение данных'),
                    },
                    )
@@ -378,11 +378,11 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     @extend_schema(summary='Получение своих оценок',
                    responses={
                        status.HTTP_200_OK: OpenApiResponse(
-                           response=SuccessResponseWithData,
+                           response=SuccessResponseWithMarks,
                            description='Успешное получение своих оценок'
                        ),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400ResponseSerializer,
+                           response=Error400Response,
                            description='Ошибка получения данных'),
                    },
                    parameters=[
@@ -395,15 +395,6 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            type=str
                        ),
                    ],
-                   examples=[
-                       OpenApiExample(
-                           'Statistic options',
-                           description='Пример вводимого параметра для получения статистики',
-                           value={
-                               'options': 'quarter/company',
-                           },
-                       )
-                   ]
                    )
     @action([HTTPMethod.GET, ], detail=False, url_path='get-marks',
             permission_classes=[IsAuthenticated])

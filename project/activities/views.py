@@ -4,7 +4,7 @@ from http import HTTPMethod
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -12,9 +12,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.models import Profile
+from accounts.serializers import Error400Response, Error404Response, SuccessResponse
 from activities.models import News, Meeting, Calendar, Task, TaskStatus, TaskEstimation
 from activities.serializers import NewsSerializer, MeetingSerializer, CalendarSerializer, TaskSerializer, \
-    TaskStatusSerializer, TaskEstimationSerializer
+    TaskStatusSerializer, TaskEstimationSerializer, SuccessResponseWithStatus, SuccessResponseWithMark, \
+    SuccessResponseWithNews, SuccessResponseWithMeeting
 from activities.utils import Service, BusyException, AlienException
 
 
@@ -30,13 +32,46 @@ class NewsViewSet(viewsets.ModelViewSet, ):
     # Разрешенные методы класса
     http_method_names = ['head', 'options', 'get', 'post', ]
 
+    # Метод для получения компании.
+    @extend_schema(summary='Получение новости',
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID новости',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
+    def retrieve(self, request: Request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    # Метод для получения списка компаний.
+    @extend_schema(summary='Получение списка новостей', )
+    def list(self, request: Request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     # Создание новости
+    @extend_schema(summary='Создание новости',
+                   request=NewsSerializer,
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=SuccessResponseWithNews,
+                           description='Успешное создание новости'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка создания новости'),
+                   },
+                   )
     def create(self, request: Request, *args, **kwargs) -> Response:
         try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
             news = News(**serializer.validated_data)
-            news.author = Profile.objects.filter(user=request.user, user__is_active=True).first()
+            news.author = Profile.objects.filter(user=request.user,
+                                                 user__is_active=True).first()
             news.save()
             result = self.serializer_class(news, many=False)
 
@@ -62,7 +97,39 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
     # Разрешенные методы класса
     http_method_names = ['head', 'options', 'get', 'post', 'delete']
 
+    # Метод для получения данных о встрече.
+    @extend_schema(summary='Получение данных о встрече',
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID компании',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
+    def retrieve(self, request: Request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    # Метод для получения списка встреч.
+    @extend_schema(summary='Получение списка встреч',)
+    def list(self, request: Request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     # Создание встречи
+    @extend_schema(summary='Создание встречи',
+                   request=MeetingSerializer,
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=SuccessResponseWithMeeting,
+                           description='Успешное создание встречи'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка создания встречи'),
+                   },
+                   )
     def create(self, request: Request, *args, **kwargs) -> Response:
         try:
             serializer = self.serializer_class(data=request.data)
@@ -99,13 +166,36 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Отмена встречи
+    @extend_schema(summary='Отмена встречи',
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешная отмена встречи'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Ошибка отмены встречи'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка отмены встречи'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID встречи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         try:
             # Очистка занятой встречей записи в календаре
             self.clear_calendar(kwargs.get('pk'))
             super().destroy(request, *args, **kwargs)
 
-            return Response({'message': 'Успешное удаление встречи.'},
+            return Response({'message': 'Успешная отмена встречи.'},
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
@@ -118,12 +208,52 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Добавление участников встречи
+    @extend_schema(summary='Добавление участников встречи',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное добавление участников встречи',
+                           examples=[OpenApiExample(
+                               name='Participants adding response',
+                               description='Пример ответа после добавления участника встречи',
+                               value={
+                                   'message': 'Успешное добавление участника к встрече'
+                               },
+                           )
+                           ],
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Ошибка добавление участников встречи'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка добавление участников встречи'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID встречи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   examples=[
+                       OpenApiExample(
+                           name='Participants adding',
+                           description='Пример вводимого имени участника встречи',
+                           value={
+                               'name': 'Имя участника',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.POST, ], detail=True, url_path='add-participant',
             permission_classes=[IsAdminUser, ])
     def add_participant(self, request: Request, *args, **kwargs) -> Response:
         try:
             user = User.objects.get(username=request.data['name'])
-            participant = Profile.objects.filter(user=user, user__is_acrive=True).first()
+            participant = Profile.objects.filter(user=user, user__is_active=True).first()
             meeting = Meeting.objects.get(id=kwargs.get('pk'))
 
             # Проверка на принадлежность к одной команде руководителя и исполнителя
@@ -145,7 +275,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
 
             return Response({'message': f'Успешное добавление участника {participant}'
                                         f' к встрече № {kwargs.get('pk')}.'
-                             }, status=status.HTTP_201_CREATED, )
+                             }, status=status.HTTP_200_OK, )
 
         except AlienException:
             return Response({'message': 'Ошибка добавления участника встречи.'
@@ -164,12 +294,44 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Удаление участников встречи
+    @extend_schema(summary='Удаление участников встречи',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное удаление участников встречи',
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Ошибка удаления участников встречи'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка удаления участников встречи'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID встречи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   examples=[
+                       OpenApiExample(
+                           name='Participants deletion',
+                           description='Пример вводимого имени участника встречи',
+                           value={
+                               'name': 'Имя участника',
+                           },
+                       )
+                   ]
+                   )
     @action(methods=[HTTPMethod.DELETE, ], detail=True, url_path='delete-participant',
             permission_classes=[IsAdminUser, ])
     def delete_participant(self, request: Request, *args, **kwargs) -> Response:
         try:
             user = User.objects.get(username=request.data['name'])
-            participant = Profile.objects.filter(user=user, user__is_acrive=True).first()
+            participant = Profile.objects.filter(user=user, user__is_active=True).first()
             meeting = Meeting.objects.get(id=kwargs.get('pk'))
 
             meeting.participants.remove(participant)
@@ -210,6 +372,27 @@ class CalendarViewSet(viewsets.ModelViewSet):
     http_method_names = ['head', 'options', 'get']
 
     # Просмотр календаря текущего пользователя за текущий день/ месяц
+    @extend_schema(summary='Просмотр календаря текущего пользователя',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=CalendarSerializer,
+                           description='Успешное получение календаря'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка получения данных'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='period',
+                           location=OpenApiParameter.QUERY,
+                           description='Параметр для определения периода календаря'
+                                       ' (daily - для ежедневного/monthly - для ежемесячного)',
+                           required=True,
+                           type=str
+                       ),
+                   ],
+                   )
     def list(self, request: Request, *args, **kwargs) -> Response:
         profile = Profile.objects.filter(user=request.user, user__is_active=True).first()
         today = datetime.date.today()
@@ -229,6 +412,11 @@ class CalendarViewSet(viewsets.ModelViewSet):
         return Response({'message': serializer.data},
                         status=status.HTTP_200_OK)
 
+    # Отключение метода для ViewSet.
+    @extend_schema(summary='Метод недоступен!')
+    def retrieve(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 @extend_schema(tags=['Task'])
 class TaskViewSet(viewsets.ModelViewSet, Service):
@@ -239,10 +427,36 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
     queryset = Task.objects.all()
     permission_classes = [IsAdminUser, ]
     # Разрешенные методы класса
-    http_method_names = ['head', 'options', 'get', 'post', 'patch', 'delete']
+    http_method_names = ['head', 'options', 'post', 'put', 'delete']
 
     # Создание задачи администратором для сотрудников с присвоением статуса "Выполняется".
     # Заполнение календаря для сотрудника.
+    @extend_schema(summary='Создание задачи администратором для сотрудников',
+                   request=TaskSerializer,
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=TaskSerializer,
+                           description='Успешное создание задачи'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка создания задачи'),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Объект не найден'),
+                   },
+                   examples=[
+                       OpenApiExample(
+                           'Task creation example',
+                           description='Пример вводимых данных задачи',
+                           value={
+                               'name': 'Название задачи',
+                               'assigned_to': 'ID исполнителя',
+                               'deadline': '2025-02-14T17:00:00'
+                           },
+                       )
+                   ]
+                   )
     def create(self, request: Request, *args, **kwargs) -> Response:
         try:
             executor = User.objects.get(profile__id=request.data['assigned_to'])
@@ -285,7 +499,42 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         f'Детали ошибки: {error}.'},
                             status=status.HTTP_400_BAD_REQUEST, )
 
-    # Создание задачи администратором для сотрудников.
+    # Обновление задачи администратором.
+    @extend_schema(summary='Обновление задачи администратором',
+                   request=TaskSerializer,
+                   responses={
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                           response=TaskSerializer,
+                           description='Успешное обновление задачи'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка обновления задачи'),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Объект не найден'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для определения ID задачи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   examples=[
+                       OpenApiExample(
+                           'Task update example',
+                           description='Пример вводимых данных задачи',
+                           value={
+                               'name': 'Название задачи',
+                               'assigned_to': 'ID исполнителя',
+                               'deadline': '2025-02-14T17:00:00'
+                           },
+                       )
+                   ]
+                   )
     def update(self, request: Request, *args, **kwargs) -> Response:
         try:
             task = Task.objects.get(id=kwargs.get('pk'))
@@ -332,6 +581,26 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Удаление задачи администратором.
+    @extend_schema(summary='Удаление задачи администратором',
+                   responses={
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                           response=SuccessResponse,
+                           description='Успешное удаление задачи'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Объект не найден'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для определения ID задачи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         try:
             task = Task.objects.get(id=kwargs.get('pk'))
@@ -349,6 +618,40 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_404_NOT_FOUND, )
 
     # Изменение статуса задачи исполнителем с добавлением комментария.
+    @extend_schema(summary='Изменение статуса задачи исполнителем',
+                   request=TaskStatusSerializer,
+                   responses={
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                           response=SuccessResponseWithStatus,
+                           description='Успешное изменение статуса'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Объект не найден'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка добавления данных'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для определения ID задачи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   examples=[
+                       OpenApiExample(
+                           'Task status update example',
+                           description='Пример вводимых данных статуса задачи',
+                           value={
+                               "status": "FINISHED/DEFERRED",
+                               "comment": "Комментарий к задаче"
+                           },
+                       )
+                   ]
+                   )
     @action([HTTPMethod.POST, ], detail=True, url_path='update-status',
             permission_classes=[IsAuthenticated, ])
     def update_status(self, request: Request, *args, **kwargs) -> Response:
@@ -385,6 +688,30 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_400_BAD_REQUEST, )
 
     # Оценка задачи начальником.
+    @extend_schema(summary='Оценка задачи начальником',
+                   request=TaskEstimationSerializer,
+                   responses={
+                       status.HTTP_201_CREATED: OpenApiResponse(
+                           response=SuccessResponseWithMark,
+                           description='Успешное выставление оценки задаче'
+                       ),
+                       status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                           response=Error404Response,
+                           description='Объект не найден'),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка добавления данных'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для определения ID задачи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
     @action([HTTPMethod.POST, ], detail=True, url_path='estimate-task', )
     def estimate_task(self, request: Request, *args, **kwargs) -> Response:
         try:

@@ -45,7 +45,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         }
 
 
-class SuccessTokenRequest(serializers.Serializer):
+class SuccessTokenResponse(serializers.Serializer):
     message = serializers.CharField(default='Token для текущего пользователя')
     token = serializers.CharField(default='Some secret token here...')
 
@@ -54,18 +54,23 @@ class SuccessResponse(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
 
 
-class SuccessResponseWithData(serializers.Serializer):
+class SuccessResponseWithMarks(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
     data = TaskEstimationSerializer()
 
 
-class Error400ResponseSerializer(serializers.Serializer):
+class SuccessResponseWithUser(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = UserSerializer()
+
+
+class Error400Response(serializers.Serializer):
     message = serializers.CharField(default='Введенные данные некорректны')
 
 
-class Error403ResponseSerializer(serializers.Serializer):
+class Error403Response(serializers.Serializer):
     message = serializers.CharField(default='Такой пользователь уже существует')
 
 
-class Error404ResponseSerializer(serializers.Serializer):
-    message = serializers.CharField(default='Данные не найдены')
+class Error404Response(serializers.Serializer):
+    message = serializers.CharField(default='Объект не найден')

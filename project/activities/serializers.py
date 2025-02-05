@@ -17,6 +17,11 @@ class NewsSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'content', 'author_name']
         model = News
 
+        extra_kwargs = {
+            'title': {'default': 'Заголовок новости'},
+            'content': {'default': 'Содержание новости'}
+        }
+
 
 class TaskSerializer(serializers.ModelSerializer):
     """
@@ -70,7 +75,8 @@ class MeetingSerializer(serializers.ModelSerializer):
     Сериализатор для модели Meeting
     """
     id = serializers.IntegerField(read_only=True)
-    organizer_name = serializers.CharField(source='organizer.user.username', read_only=True)
+    organizer_name = serializers.CharField(source='organizer.user.username',
+                                           read_only=True, default='Имя организатора')
 
     def validate(self, data):
         if data['start_at'].timestamp() >= data['end_at'].timestamp():
@@ -95,3 +101,27 @@ class CalendarSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'name', 'start_at', 'end_at', ]
         model = Calendar
+
+        extra_kwargs = {
+            'name': {'default': 'Название календаря'}
+        }
+
+
+class SuccessResponseWithStatus(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = TaskStatusSerializer()
+
+
+class SuccessResponseWithMark(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = TaskEstimationSerializer()
+
+
+class SuccessResponseWithNews(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = NewsSerializer()
+
+
+class SuccessResponseWithMeeting(serializers.Serializer):
+    message = serializers.CharField(default='Операция прошла удачно')
+    data = MeetingSerializer()
