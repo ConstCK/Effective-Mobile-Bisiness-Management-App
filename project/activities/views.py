@@ -113,7 +113,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
         return super().retrieve(request, *args, **kwargs)
 
     # Метод для получения списка встреч.
-    @extend_schema(summary='Получение списка встреч',)
+    @extend_schema(summary='Получение списка встреч', )
     def list(self, request: Request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -432,7 +432,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                    responses={
                        status.HTTP_201_CREATED: OpenApiResponse(
                            response=TaskSerializer,
-                           description='Успешное создание задачи'
+                           description='Успешное создание задачи',
                        ),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
                            response=Error400Response,
@@ -447,6 +447,17 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                            description='Пример вводимых данных задачи',
                            value={
                                'name': 'Название задачи',
+                               'assigned_to': 'ID исполнителя',
+                               'deadline': '2025-02-14T17:00:00'
+                           },
+                       ),
+                       OpenApiExample(
+                           'Task response example',
+                           description='Пример вводимых данных задачи',
+                           value={
+                               'id': 1,
+                               'name': 'Название задачи',
+                               'assigned_by': 'ID организатора',
                                'assigned_to': 'ID исполнителя',
                                'deadline': '2025-02-14T17:00:00'
                            },
@@ -577,7 +588,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
     # Удаление задачи администратором.
     @extend_schema(summary='Удаление задачи администратором',
                    responses={
-                       status.HTTP_202_ACCEPTED: OpenApiResponse(
+                       status.HTTP_200_OK: OpenApiResponse(
                            response=SuccessResponse,
                            description='Успешное удаление задачи'
                        ),
@@ -721,7 +732,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
             result = TaskEstimationSerializer(task_estimation)
             return Response({'message': 'Успешная оценка задачи.',
                              'data': result.data},
-                            status=status.HTTP_202_ACCEPTED, )
+                            status=status.HTTP_201_CREATED, )
 
         except AlienException:
             return Response({'message': 'Ошибка оценки задачи.'

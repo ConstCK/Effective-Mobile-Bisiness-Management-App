@@ -3,7 +3,6 @@ from http import HTTPMethod
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError
 from django.db.models import Avg
 from django.db.models.functions import Round
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
