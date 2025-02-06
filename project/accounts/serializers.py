@@ -31,7 +31,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                                                 choices=Position.labels,
                                                 read_only=True)
     name = serializers.CharField(source='user.username', read_only=True, default='Some name')
-    company_name = serializers.CharField(source='team.name', read_only=True, default='Dream team')
+    company_name = serializers.CharField(source='team.name', read_only=True)
     team = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:

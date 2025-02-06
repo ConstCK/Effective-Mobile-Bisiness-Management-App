@@ -48,7 +48,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                    )
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         super().destroy(request, *args, **kwargs)
-        return Response({'message': f'Успешное удаление компании.'},
+        return Response({'message': 'Успешное удаление компании.'},
                         status=status.HTTP_200_OK, )
 
     # Метод для получения компании.
@@ -67,12 +67,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
     # Метод для получения списка компаний.
-    @extend_schema(summary='Получение списка компаний',)
+    @extend_schema(summary='Получение списка компаний', )
     def list(self, request: Request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     # Метод для создания компании.
-    @extend_schema(summary='Создание компании',)
+    @extend_schema(summary='Создание компании', )
     def create(self, request: Request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
@@ -115,15 +115,16 @@ class StructureViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     # Метод для получения указанной организационной структуры.
-    @extend_schema(summary='Получение указанной организационной структуры', parameters=[
-        OpenApiParameter(
-            name='id',
-            location=OpenApiParameter.PATH,
-            description='Параметр для указания ID структуры',
-            required=True,
-            type=int
-        ),
-    ],
+    @extend_schema(summary='Получение указанной организационной структуры',
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID структуры',
+                           required=True,
+                           type=int
+                       ),
+                   ],
                    )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
@@ -172,7 +173,7 @@ class StructureViewSet(viewsets.ModelViewSet):
             instance.structure = structure
             instance.save()
 
-            return Response({'message': f'Успешное создание объекта.',
+            return Response({'message': 'Успешное создание объекта.',
                              'data': serializer.data
                              },
                             status=status.HTTP_201_CREATED, )
@@ -209,7 +210,7 @@ class StructureViewSet(viewsets.ModelViewSet):
             instance = StructureMember.objects.get(pk=kwargs.get('pk'))
             instance.delete()
 
-            return Response({'message': f'Успешное удаление объекта.'},
+            return Response({'message': 'Успешное удаление объекта.'},
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:

@@ -186,7 +186,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             user.username = request.user.username
             user.set_password(serializer.validated_data['password'])
             user.save()
-            return Response({'message': f'Данные профиля успешно обновлены.',
+            return Response({'message': 'Данные профиля успешно обновлены.',
                              'user': {'id': user.id, 'username': user.username,
                                       'is_staff': user.is_staff},
                              },
@@ -236,6 +236,15 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            response=Error404Response,
                            description='Профиль не найден'),
                    },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID профиля',
+                           required=True,
+                           type=int
+                       ),
+                   ],
                    )
     @action(methods=[HTTPMethod.GET, ], detail=True, url_path='upgrade-profile',
             permission_classes=[IsAdminUser, ])
@@ -251,7 +260,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Профиль с указанным ID не существует.'},
+            return Response({'message': 'Профиль с указанным ID не существует.'},
                             status=status.HTTP_404_NOT_FOUND, )
 
     # Изменение должности пользователя (доступно только генеральному менеджеру)
@@ -269,6 +278,15 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            response=Error400Response,
                            description='Ошибка обновления профиля'),
                    },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID профиля',
+                           required=True,
+                           type=int
+                       ),
+                   ],
                    examples=[
                        OpenApiExample(
                            'Position update',
@@ -302,7 +320,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_202_ACCEPTED, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Профиль с указанным ID не существует.'},
+            return Response({'message': 'Профиль с указанным ID не существует.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Не удалось обновить профиль.'
@@ -323,6 +341,15 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                            response=Error400Response,
                            description='Ошибка обновления профиля'),
                    },
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID профиля',
+                           required=True,
+                           type=int
+                       ),
+                   ],
                    examples=[
                        OpenApiExample(
                            'Company transfer',
@@ -346,7 +373,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_202_ACCEPTED, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Профиль или компания с указанным ID не существует.'},
+            return Response({'message': 'Профиль или компания с указанным ID не существует.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Не удалось обновить профиль.'

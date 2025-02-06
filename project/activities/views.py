@@ -199,7 +199,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка удаление встречи.'
+            return Response({'message': 'Ошибка удаление встречи.'
                                         f'Неверный ID встречи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
@@ -350,7 +350,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                              }, status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка удаления участника встречи.'
+            return Response({'message': 'Ошибка удаления участника встречи.'
                                         f'Неверный ID встречи или имя участника.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
@@ -491,7 +491,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Исполнитель задачи - сотрудник другой компании.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка назначения задачи.'
+            return Response({'message': 'Ошибка назначения задачи.'
                                         f'Неверный ID исполнителя.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
@@ -572,7 +572,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Исполнитель задачи - сотрудник другой компании.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка обновления задачи.'
+            return Response({'message': 'Ошибка обновления задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
@@ -613,7 +613,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка удаления задачи.'
+            return Response({'message': 'Ошибка удаления задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
 
@@ -679,7 +679,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Обновления статуса доступно только для сотрудника задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка обновления статуса задачи.'
+            return Response({'message': 'Ошибка обновления статуса задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
@@ -737,7 +737,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         ' назначившего задачу задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка оценки задачи.'
+            return Response({'message': 'Ошибка оценки задачи.'
                                         f'Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:

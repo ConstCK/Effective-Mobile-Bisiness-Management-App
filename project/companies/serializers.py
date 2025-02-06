@@ -40,7 +40,7 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'structure', 'structure_detail']
         model = Company
         extra_kwargs = {
-            'structure': {'write_only': True, 'default': 'ID компании'},
+            'structure': {'write_only': True, 'default': 'ID структуры'},
             'name': {'default': 'Название компании'},
         }
 

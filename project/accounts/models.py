@@ -10,7 +10,7 @@ class Profile(models.Model):
     Таблица профилей пользователей
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    team = models.ForeignKey(Company, on_delete=models.PROTECT,null=True,
+    team = models.ForeignKey(Company, on_delete=models.PROTECT, null=True,
                              related_name='profiles', verbose_name='Компания')
     position = models.CharField(max_length=32, choices=Position.choices,
                                 default=Position.EMPLOYEE, verbose_name='Должность')
@@ -22,4 +22,3 @@ class Profile(models.Model):
     class Meta:
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
-

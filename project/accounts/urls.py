@@ -8,6 +8,3 @@ router = routers.DefaultRouter()
 router.register('', UserViewSet)
 
 urlpatterns = router.urls
-
-
-

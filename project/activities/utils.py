@@ -1,7 +1,6 @@
 import datetime
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
 
 from accounts.models import Profile
 from activities.models import Meeting, Calendar, Task
