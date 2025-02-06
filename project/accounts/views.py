@@ -60,9 +60,6 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                        status.HTTP_201_CREATED: OpenApiResponse(
                            response=ProfileSerializer,
                            description='Успешная регистрация пользователя'),
-                       status.HTTP_403_FORBIDDEN: OpenApiResponse(
-                           response=Error403Response,
-                           description='Такой пользователь уже существует'),
                        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
                            response=Error400Response,
                            description='Ошибка регистрации'),
@@ -107,11 +104,6 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                              'token': token.key,
                              },
                             status=status.HTTP_201_CREATED, )
-        except IntegrityError as error:
-            return Response({'message': f'Невозможно зарегистрировать пользователя.'
-                                        f'Такой пользователь уже существует.'
-                                        f'Детали ошибки: {error}...'},
-                            status=status.HTTP_403_FORBIDDEN, )
         except Exception as error:
             return Response({'message': f'Ошибка регистрации.'
                                         f'Детали ошибки: {error}.'},
@@ -218,7 +210,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                 instance.is_active = False
                 instance.save()
 
-                return Response({'message': f'Данные профиля успешно удалены.'},
+                return Response({'message': 'Данные профиля успешно удалены.'},
                                 status=status.HTTP_200_OK, )
 
         except Exception as error:
@@ -228,7 +220,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     # Изменение статуса пользователя (апгрейд до администратора)
     @extend_schema(summary='Изменение статуса пользователя',
                    responses={
-                       status.HTTP_200_OK: OpenApiResponse(
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
                            response=SuccessResponse,
                            description='Успешное изменение статуса профиля'
                        ),
@@ -257,7 +249,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
             instance.user.save()
 
             return Response({'message': f'{instance.user} - теперь администратор.'},
-                            status=status.HTTP_200_OK, )
+                            status=status.HTTP_202_ACCEPTED, )
 
         except ObjectDoesNotExist:
             return Response({'message': 'Профиль с указанным ID не существует.'},
@@ -267,7 +259,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     @extend_schema(summary='Изменение должности пользователя',
                    request=ProfileSerializer,
                    responses={
-                       status.HTTP_200_OK: OpenApiResponse(
+                       status.HTTP_202_ACCEPTED: OpenApiResponse(
                            response=SuccessResponse,
                            description='Успешное изменение должности профиля'
                        ),

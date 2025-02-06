@@ -199,8 +199,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка удаление встречи.'
-                                        f'Неверный ID встречи.'},
+            return Response({'message': 'Ошибка удаление встречи. Неверный ID встречи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка удаление встречи.'
@@ -285,8 +284,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
             return Response({'message': 'В это время участник будет занят.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': f'Ошибка добавления участника встречи.'
-                                        f'Неверный ID встречи или имя участника.'},
+            return Response({'message': 'Ошибка добавления участника встречи. Неверный ID встречи или имя участника.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка добавления участника встречи.'
@@ -350,8 +348,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                              }, status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка удаления участника встречи.'
-                                        f'Неверный ID встречи или имя участника.'},
+            return Response({'message': 'Ошибка удаления участника встречи. Неверный ID встречи или имя участника.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка добавления участника встречи.'
@@ -403,8 +400,7 @@ class CalendarViewSet(viewsets.ModelViewSet):
         elif request.query_params['period'] == 'monthly':
             calendar = Calendar.objects.filter(owner=profile, start_at__month=today.month)
         else:
-            return Response({'message': f'Ошибка получения календаря.'
-                                        f'Возможно неверно указан режим (daily/monthly).'},
+            return Response({'message': 'Ошибка получения календаря. Возможно неверно указан режим (daily/monthly).'},
                             status=status.HTTP_400_BAD_REQUEST, )
 
         serializer = self.serializer_class(calendar, many=True)
@@ -491,8 +487,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Исполнитель задачи - сотрудник другой компании.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка назначения задачи.'
-                                        f'Неверный ID исполнителя.'},
+            return Response({'message': 'Ошибка назначения задачи. Неверный ID исполнителя.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка создания задачи.'
@@ -572,8 +567,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Исполнитель задачи - сотрудник другой компании.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка обновления задачи.'
-                                        f'Неверный ID задачи.'},
+            return Response({'message': 'Ошибка обновления задачи. Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка обновления задачи.'
@@ -613,8 +607,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK, )
 
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка удаления задачи.'
-                                        f'Неверный ID задачи.'},
+            return Response({'message': 'Ошибка удаления задачи. Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
 
     # Изменение статуса задачи исполнителем с добавлением комментария.
@@ -679,8 +672,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         'Обновления статуса доступно только для сотрудника задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка обновления статуса задачи.'
-                                        f'Неверный ID задачи.'},
+            return Response({'message': 'Ошибка обновления статуса задачи. Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка обновления статуса задачи.'
@@ -737,8 +729,7 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
                                         ' назначившего задачу задачи.'},
                             status=status.HTTP_400_BAD_REQUEST, )
         except ObjectDoesNotExist:
-            return Response({'message': 'Ошибка оценки задачи.'
-                                        f'Неверный ID задачи.'},
+            return Response({'message': 'Ошибка оценки задачи. Неверный ID задачи.'},
                             status=status.HTTP_404_NOT_FOUND, )
         except Exception as error:
             return Response({'message': f'Ошибка оценки задачи.'

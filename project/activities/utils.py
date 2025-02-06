@@ -26,8 +26,9 @@ class Service:
         person_calendars = person.calendars
         if person_calendars.exists():
             for i in person_calendars.values():
-                if i['name'].startswith('Встреча') and (i['end_at'] >= start_time >= i['start_at']
-                                                        or i['end_at'] >= end_time >= i['start_at']):
+                if (i['name'].startswith('Встреча')
+                        and (i['end_at'] >= start_time >= i['start_at']
+                             or i['end_at'] >= end_time >= i['start_at'])):
                     return False
 
         return True
