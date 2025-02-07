@@ -54,11 +54,6 @@ class SuccessResponse(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
 
 
-class SuccessResponseWithMarks(serializers.Serializer):
-    message = serializers.CharField(default='Операция прошла удачно')
-    data = TaskEstimationSerializer()
-
-
 class SuccessResponseWithUser(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
     data = UserSerializer()

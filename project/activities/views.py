@@ -3,6 +3,8 @@ from http import HTTPMethod
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Avg
+from django.db.models.functions import Round
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse
 from rest_framework import viewsets, status
@@ -16,7 +18,7 @@ from accounts.serializers import Error400Response, Error404Response, SuccessResp
 from activities.models import News, Meeting, Calendar, Task, TaskStatus, TaskEstimation
 from activities.serializers import NewsSerializer, MeetingSerializer, CalendarSerializer, TaskSerializer, \
     TaskStatusSerializer, TaskEstimationSerializer, SuccessResponseWithStatus, SuccessResponseWithMark, \
-    SuccessResponseWithNews, SuccessResponseWithMeeting
+    SuccessResponseWithNews, SuccessResponseWithMeeting, SuccessResponseWithMarks
 from activities.utils import Service, BusyException, AlienException
 
 
@@ -103,7 +105,7 @@ class MeetingViewSet(viewsets.ModelViewSet, Service):
                        OpenApiParameter(
                            name='id',
                            location=OpenApiParameter.PATH,
-                           description='Параметр для указания ID компании',
+                           description='Параметр для указания ID встречи',
                            required=True,
                            type=int
                        ),
@@ -423,7 +425,27 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
     queryset = Task.objects.all()
     permission_classes = [IsAdminUser, ]
     # Разрешенные методы класса
-    http_method_names = ['head', 'options', 'post', 'put', 'delete']
+    http_method_names = ['head', 'options', 'get', 'post', 'put', 'delete']
+
+    # Метод для получения данных о задаче.
+    @extend_schema(summary='Получение данных о задаче',
+                   parameters=[
+                       OpenApiParameter(
+                           name='id',
+                           location=OpenApiParameter.PATH,
+                           description='Параметр для указания ID задачи',
+                           required=True,
+                           type=int
+                       ),
+                   ],
+                   )
+    def retrieve(self, request: Request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    # Метод для получения списка задач.
+    @extend_schema(summary='Получение списка задач', )
+    def list(self, request: Request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     # Создание задачи администратором для сотрудников с присвоением статуса "Выполняется".
     # Заполнение календаря для сотрудника.
@@ -745,4 +767,82 @@ class TaskViewSet(viewsets.ModelViewSet, Service):
         except Exception as error:
             return Response({'message': f'Ошибка оценки задачи.'
                                         f'Детали ошибки: {error}.'},
+                            status=status.HTTP_400_BAD_REQUEST, )
+
+    # Получение своих оценок (всех/средние-квартальных/в рамках компании).
+    @extend_schema(summary='Получение своих оценок',
+                   responses={
+                       status.HTTP_200_OK: OpenApiResponse(
+                           response=SuccessResponseWithMarks,
+                           description='Успешное получение своих оценок'
+                       ),
+                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                           response=Error400Response,
+                           description='Ошибка получения данных'),
+                   },
+                   parameters=[
+                       OpenApiParameter(
+                           name='options',
+                           location=OpenApiParameter.QUERY,
+                           description='Параметр для определения вывода статистики'
+                                       ' (quarter - для квартальной/company - в рамках компании',
+                           required=False,
+                           type=str
+                       ),
+                   ],
+                   )
+    @action([HTTPMethod.GET, ], detail=False, url_path='get-marks',
+            permission_classes=[IsAuthenticated])
+    def get_marks(self, request: Request, *args, **kwargs) -> Response:
+        try:
+            quarter = self.determine_quarter()
+            tasks = Task.objects.filter(assigned_to=Profile.objects.get(user=request.user))
+
+            # Проверка передаваемых параметров квартальный отчет/в рамках компании
+            if request.query_params.get('options') == 'quarter':
+                tasks = tasks.filter(taskestimation__created_at__month__gte=quarter[0],
+                                     taskestimation__created_at__month__lte=quarter[1], )
+                result = tasks.aggregate(
+                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting',
+                                                       default=0), 2),
+                    average_completeness=Round(Avg('taskestimation__completeness',
+                                                   default=0), 2),
+                    average_quality=Round(Avg('taskestimation__quality',
+                                              default=0), 2)
+                )
+
+                return Response({'message': 'Средние оценки исполнителя за текущий квартал',
+                                 'data': {'Соответствие дедлайн': result['average_deadline_meeting'],
+                                          'Завершение задачи': result['average_completeness'],
+                                          'Качество выполнения': result['average_quality']}},
+                                status=status.HTTP_200_OK)
+
+            # Проверка передаваемых параметров квартальный отчет/в рамках компании
+            if request.query_params.get('options') == 'company':
+                current_team = Profile.objects.get(user=request.user).team
+                profiles = Profile.objects.filter(team=current_team)
+                tasks = tasks.filter(assigned_to__in=profiles)
+                result = tasks.aggregate(
+                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting', default=0), 2),
+                    average_completeness=Round(Avg('taskestimation__completeness', default=0), 2),
+                    average_quality=Round(Avg('taskestimation__quality', default=0), 2)
+                )
+
+                return Response({'message': 'Средние оценки исполнителя в компании',
+                                 'data': {'Соответствие дедлайн': result['average_deadline_meeting'],
+                                          'Завершение задачи': result['average_completeness'],
+                                          'Качество выполнения': result['average_quality']}},
+                                status=status.HTTP_200_OK)
+            # Все оценки
+            else:
+                all_marks = TaskEstimation.objects.filter(task__in=tasks)
+                result = TaskEstimationSerializer(all_marks, many=True)
+
+                return Response({'message': 'Все оценки пользователя за задачи',
+                                 'data': result.data},
+                                status=status.HTTP_200_OK)
+
+        except Exception as error:
+            return Response({'message': f'Не удалось отобразить список оценок.'
+                                        f'Детали ошибки: {error}'},
                             status=status.HTTP_400_BAD_REQUEST, )

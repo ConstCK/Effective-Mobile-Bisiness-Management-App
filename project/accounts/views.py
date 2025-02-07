@@ -3,8 +3,6 @@ from http import HTTPMethod
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Avg
-from django.db.models.functions import Round
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from rest_framework import viewsets, status
 from rest_framework.authtoken.models import Token
@@ -16,9 +14,7 @@ from rest_framework.response import Response
 from accounts.models import Profile
 from accounts.serializers import UserSerializer, ProfileSerializer, Error400Response, \
     Error403Response, Error404Response, SuccessResponse, \
-    SuccessResponseWithMarks, SuccessTokenResponse, SuccessResponseWithUser
-from activities.models import Task, TaskEstimation
-from activities.serializers import TaskEstimationSerializer
+    SuccessTokenResponse, SuccessResponseWithUser
 from activities.utils import Service
 from companies.models import Company
 
@@ -29,7 +25,7 @@ class UserViewSet(viewsets.ModelViewSet, Service):
     Класс для регистрации пользователя, изменения данных и удаления профиля.
     Авторизация пользователя для всех API происходит путем передачи токена в заголовке запроса.
     Для Swagger также необходима авторизация: Authorize -> Token fe663987c55934a4888044d3e560c6194534b25c
-    Пример заголовка-> Authorization: Token fe663987c55934a4888044d3e560c6194534b25c
+    Пример заголовка-> "Authorization": "Token полученный токен"
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
@@ -391,81 +387,3 @@ class UserViewSet(viewsets.ModelViewSet, Service):
                             status=status.HTTP_200_OK)
         return Response({'message': 'У Вас недостаточно прав для получения этой информации'},
                         status=status.HTTP_403_FORBIDDEN)
-
-    # Получение своих оценок (всех/средние-квартальных/в рамках компании).
-    @extend_schema(summary='Получение своих оценок',
-                   responses={
-                       status.HTTP_200_OK: OpenApiResponse(
-                           response=SuccessResponseWithMarks,
-                           description='Успешное получение своих оценок'
-                       ),
-                       status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                           response=Error400Response,
-                           description='Ошибка получения данных'),
-                   },
-                   parameters=[
-                       OpenApiParameter(
-                           name='options',
-                           location=OpenApiParameter.QUERY,
-                           description='Параметр для определения вывода статистики'
-                                       ' (quarter - для квартальной/company - в рамках компании',
-                           required=False,
-                           type=str
-                       ),
-                   ],
-                   )
-    @action([HTTPMethod.GET, ], detail=False, url_path='get-marks',
-            permission_classes=[IsAuthenticated])
-    def get_marks(self, request: Request, *args, **kwargs) -> Response:
-        try:
-            quarter = self.determine_quarter()
-            tasks = Task.objects.filter(assigned_to=Profile.objects.get(user=request.user))
-
-            # Проверка передаваемых параметров квартальный отчет/в рамках компании
-            if request.query_params.get('options') == 'quarter':
-                tasks = tasks.filter(taskestimation__created_at__month__gte=quarter[0],
-                                     taskestimation__created_at__month__lte=quarter[1], )
-                result = tasks.aggregate(
-                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting',
-                                                       default=0), 2),
-                    average_completeness=Round(Avg('taskestimation__completeness',
-                                                   default=0), 2),
-                    average_quality=Round(Avg('taskestimation__quality',
-                                              default=0), 2)
-                )
-
-                return Response({'message': 'Средние оценки исполнителя за текущий квартал',
-                                 'data': {'Соответствие дедлайн': result['average_deadline_meeting'],
-                                          'Завершение задачи': result['average_completeness'],
-                                          'Качество выполнения': result['average_quality']}},
-                                status=status.HTTP_200_OK)
-
-            # Проверка передаваемых параметров квартальный отчет/в рамках компании
-            if request.query_params.get('options') == 'company':
-                current_team = Profile.objects.get(user=request.user).team
-                profiles = Profile.objects.filter(team=current_team)
-                tasks = tasks.filter(assigned_to__in=profiles)
-                result = tasks.aggregate(
-                    average_deadline_meeting=Round(Avg('taskestimation__deadline_meeting', default=0), 2),
-                    average_completeness=Round(Avg('taskestimation__completeness', default=0), 2),
-                    average_quality=Round(Avg('taskestimation__quality', default=0), 2)
-                )
-
-                return Response({'message': 'Средние оценки исполнителя в компании',
-                                 'data': {'Соответствие дедлайн': result['average_deadline_meeting'],
-                                          'Завершение задачи': result['average_completeness'],
-                                          'Качество выполнения': result['average_quality']}},
-                                status=status.HTTP_200_OK)
-            # Все оценки
-            else:
-                all_marks = TaskEstimation.objects.filter(task__in=tasks)
-                result = TaskEstimationSerializer(all_marks, many=True)
-
-                return Response({'message': 'Все оценки пользователя за задачи',
-                                 'data': result.data},
-                                status=status.HTTP_200_OK)
-
-        except Exception as error:
-            return Response({'message': f'Не удалось отобразить список оценок.'
-                                        f'Детали ошибки: {error}'},
-                            status=status.HTTP_400_BAD_REQUEST, )

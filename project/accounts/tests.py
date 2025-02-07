@@ -17,17 +17,18 @@ class TestProfile(TestCase):
         cls.data = TestProfileData()
         cls.profile_1 = Client().post(path='/api/v1/accounts/',
                                       data=TestProfileData().user_1)
-        profile = Profile.objects.get(id=1)
-        profile.position = 'BOSS'
-        profile.save()
+        p_1 = Profile.objects.get(id=cls.profile_1.data['profile']['id'])
+        p_1.position = 'BOSS'
+        p_1.save()
 
         cls.profile_2 = Client().post(path='/api/v1/accounts/',
                                       data=TestProfileData().user_2)
         cls.profile_3 = Client().post(path='/api/v1/accounts/',
                                       data=TestProfileData().user_4)
-        profile = Profile.objects.get(id=1)
-        profile.position = 'BOSS'
-        profile.save()
+
+        p_2 = Profile.objects.get(id=cls.profile_2.data['profile']['id'])
+        p_2.position = 'BOSS'
+        p_2.save()
         cls.structure = Structure.objects.create(name='Linear')
         cls.team = Company.objects.create(name='Primary', structure=cls.structure)
 
@@ -108,11 +109,3 @@ class TestProfile(TestCase):
             data={'team': '1'}
         )
         self.assertEqual(response.status_code, 202)
-
-    # Получение своих оценок
-    def test_get_marks(self):
-        response = self.client.get(
-            path=f'{self.AUTH_URL}get-marks/',
-            headers={'Authorization': f'Token {self.profile_1.data['token']}'},
-        )
-        self.assertEqual(response.status_code, 200)

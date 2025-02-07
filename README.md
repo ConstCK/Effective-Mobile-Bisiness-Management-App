@@ -10,10 +10,17 @@
 * "from django.core.management.utils import get_random_secret_key, get_random_secret_key()"
 * Запустите сервер из каталога проекта (python manage.py runserver)
 
-## Для запуска приложение в контейнере:
+## Примечание:
+Для большинства операций нужна авторизация. Для этого в заголовках запроса (headers)
+используйте ("Authorization": "Token Ваш access token, полученный при регистрации/ авторизации")
 
+## Для запуска приложение в контейнере:
 **Docker Desktop должен быть запущен
 Команда запуска из директории проекта из консоли: docker-compose up**
+
+## Для запуска приложение в контейнере:
+**Docker Desktop должен быть запущен
+Команда запуска из директории проекта из консоли: docker-compose --file tests.yaml up**
 
 
 ## EndPoints:

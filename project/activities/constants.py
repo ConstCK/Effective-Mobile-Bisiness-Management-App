@@ -10,12 +10,12 @@ class TaskStatuses(models.TextChoices):
 
 class TestActivityData:
     user_1 = {
-        'username': 'Petrov',
+        'username': 'First',
         'password': 'user1234',
         'is_staff': 'True'
     }
     user_2 = {
-        'username': 'Ivanov',
+        'username': 'Second',
         'password': 'user1234',
         'is_staff': 'False'
     }

@@ -2,7 +2,6 @@ from django.test import TestCase, Client
 
 from accounts.models import Profile
 from companies.constants import TestCompanyData
-from companies.models import Structure
 
 
 class TestCompany(TestCase):
@@ -12,18 +11,21 @@ class TestCompany(TestCase):
     def setUpTestData(cls):
         cls.BUSINESS_URL = '/api/v1/business/'
         cls.data = TestCompanyData()
-        cls.profile_1 = Client().post(path='/api/v1/accounts/',
+        cls.profile_4 = Client().post(path='/api/v1/accounts/',
                                       data=TestCompanyData().user_1)
 
-        profile = Profile.objects.get(id=cls.profile_1.data['profile']['id'])
-        profile.position = 'BOSS'
-        profile.save()
+        p_4 = Profile.objects.get(id=cls.profile_4.data['profile']['id'])
+        p_4.position = 'BOSS'
+        p_4.save()
+
+        cls.profile_5 = Client().post(path='/api/v1/accounts/',
+                                      data=TestCompanyData().user_2)
 
     # Успешное создание организационной структуры
     def test_create_structure(self):
         response = self.client.post(path=f'{self.BUSINESS_URL}structures/',
                                     data={'name': 'Линейная'},
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -31,7 +33,8 @@ class TestCompany(TestCase):
     def test_create_structure_fail(self):
         response = self.client.post(path=f'{self.BUSINESS_URL}structures/',
                                     data={'name': 'Линейная'},
-                                    headers={'Authorization': f'Token {self.profile_2.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_5.data['token']}'})
+        print(response.data)
         self.assertEqual(response.status_code, 403)
 
     # Добавление членов организационной структуры
@@ -39,7 +42,7 @@ class TestCompany(TestCase):
         self.test_create_structure()
         response = self.client.post(path=f'{self.BUSINESS_URL}structures/1/add-member/',
                                     data=self.data.structure_member,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_4.data['token']}'})
 
         self.assertEqual(response.status_code, 201)
 
@@ -48,7 +51,7 @@ class TestCompany(TestCase):
         structure = self.test_create_structure()
 
         response = self.client.delete(path=f'{self.BUSINESS_URL}structures/{structure['id']}/',
-                                      headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                      headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 204)
 
     # Получение организационной структуры
@@ -56,7 +59,7 @@ class TestCompany(TestCase):
         structure = self.test_create_structure()
 
         response = self.client.get(path=f'{self.BUSINESS_URL}structures/{structure['id']}/',
-                                   headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                   headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 200)
 
     # Успешное создание компании
@@ -64,7 +67,7 @@ class TestCompany(TestCase):
         structure = self.test_create_structure()
         response = self.client.post(path=f'{self.BUSINESS_URL}companies/',
                                     data={'name': 'Main', 'structure': structure['id']},
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -72,12 +75,12 @@ class TestCompany(TestCase):
     def test_get_company(self):
         company = self.test_create_company()
         response = self.client.get(path=f'{self.BUSINESS_URL}companies/{company['id']}/',
-                                   headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                   headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 200)
 
     # Удаление компании
     def test_delete_company(self):
         company = self.test_create_company()
         response = self.client.delete(path=f'{self.BUSINESS_URL}companies/{company['id']}/',
-                                      headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                      headers={'Authorization': f'Token {self.profile_4.data['token']}'})
         self.assertEqual(response.status_code, 200)

@@ -1,0 +1,62 @@
+services:
+  accounts_test:
+    build: .
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+    command: bash -c "cd project && python manage.py makemigrations
+      && python manage.py migrate && python manage.py test accounts -v 2"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  companies_test:
+    build: .
+    ports:
+      - "8001:8001"
+    expose:
+      - 8000
+    command: bash -c "cd project && python manage.py makemigrations
+      && python manage.py migrate && python manage.py test companies -v 2"
+    depends_on:
+      accounts_test:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  activities_test:
+    build: .
+    ports:
+      - "8001:8001"
+    expose:
+      - 8000
+    command: bash -c "cd project && python manage.py makemigrations
+      && python manage.py migrate && python manage.py test activities -v 2"
+    depends_on:
+      accounts_test:
+        condition: service_completed_successfully
+      companies_test:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15.1-alpine
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "5433:5433"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data/
+
+volumes:
+  db_data:

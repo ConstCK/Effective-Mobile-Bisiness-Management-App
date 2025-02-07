@@ -4,8 +4,6 @@ from django.test import TestCase, Client
 
 from accounts.models import Profile
 from activities.constants import TestActivityData
-from activities.models import Meeting
-from companies.models import Company
 
 
 class TestActivities(TestCase):
@@ -15,21 +13,21 @@ class TestActivities(TestCase):
     def setUpTestData(cls):
         cls.ACTIVITIES_URL = '/api/v1/activities/'
         cls.data = TestActivityData()
-        cls.profile_1 = Client().post(path='/api/v1/accounts/',
+        cls.profile_6 = Client().post(path='/api/v1/accounts/',
                                       data=TestActivityData().user_1)
 
-        profile = Profile.objects.get(id=cls.profile_1.data['profile']['id'])
-        profile.position = 'BOSS'
-        profile.save()
+        p_6 = Profile.objects.get(id=cls.profile_6.data['profile']['id'])
+        p_6.position = 'BOSS'
+        p_6.save()
 
-        cls.profile_2 = Client().post(path='/api/v1/accounts/',
+        cls.profile_7 = Client().post(path='/api/v1/accounts/',
                                       data=TestActivityData().user_2)
 
     # Успешное создание новости 1
     def test_create_news_1(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}news/',
                                     data=self.data.news_1,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -37,7 +35,7 @@ class TestActivities(TestCase):
     def test_create_news_2(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}news/',
                                     data=self.data.news_2,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -46,7 +44,7 @@ class TestActivities(TestCase):
         self.test_create_news_1()
         self.test_create_news_2()
         response = self.client.get(path=f'{self.ACTIVITIES_URL}news/',
-                                   headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                   headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
 
@@ -54,7 +52,7 @@ class TestActivities(TestCase):
     def test_create_meeting_1(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}meeting/',
                                     data=self.data.meeting_1,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -62,14 +60,14 @@ class TestActivities(TestCase):
     def test_create_meeting_2(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}meeting/',
                                     data=self.data.meeting_2,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
 
     # Создание встречи с неправильными датами
     def test_create_meeting_fail(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}meeting/',
                                     data=self.data.meeting_3,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
 
         self.assertEqual(response.status_code, 400)
 
@@ -78,7 +76,7 @@ class TestActivities(TestCase):
         self.test_create_meeting_1()
         self.test_create_meeting_2()
         response = self.client.get(path=f'{self.ACTIVITIES_URL}meeting/',
-                                   headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                   headers={'Authorization': f'Token {self.profile_6.data['token']}'})
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
@@ -87,7 +85,7 @@ class TestActivities(TestCase):
     def test_delete_meeting(self):
         meeting = self.test_create_meeting_1()
         response = self.client.get(path=f'{self.ACTIVITIES_URL}meeting/{meeting['data']['id']}/',
-                                   headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                   headers={'Authorization': f'Token {self.profile_6.data['token']}'})
 
         self.assertEqual(response.status_code, 200)
 
@@ -97,15 +95,15 @@ class TestActivities(TestCase):
 
         response = self.client.post(
             path=f'{self.ACTIVITIES_URL}meeting/{meeting['data']['id']}/add-participant/',
-            data={'name': 'Ivanov'},
-            headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+            data={'name': 'Second'},
+            headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 200)
 
     # Успешное создание задачи 1
     def test_create_task_1(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}task/',
                                     data=self.data.task_1,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -113,7 +111,7 @@ class TestActivities(TestCase):
     def test_create_task_2(self):
         response = self.client.post(path=f'{self.ACTIVITIES_URL}task/',
                                     data=self.data.task_2,
-                                    headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                    headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 201)
         return response.data
 
@@ -123,7 +121,7 @@ class TestActivities(TestCase):
         response = self.client.put(
             path=f'{self.ACTIVITIES_URL}task/{task['data']['id']}/',
             data=json.dumps(self.data.new_task),
-            headers={'Authorization': f'Token {self.profile_1.data['token']}',
+            headers={'Authorization': f'Token {self.profile_6.data['token']}',
                      'Content-Type': 'application/json'}
         )
         self.assertEqual(response.status_code, 202)
@@ -132,7 +130,7 @@ class TestActivities(TestCase):
     def test_delete_task_1(self):
         task = self.test_create_task_1()
         response = self.client.delete(path=f'{self.ACTIVITIES_URL}task/{task['data']['id']}/',
-                                      headers={'Authorization': f'Token {self.profile_1.data['token']}'})
+                                      headers={'Authorization': f'Token {self.profile_6.data['token']}'})
         self.assertEqual(response.status_code, 200)
 
     # Обновление статуса задачи
@@ -141,7 +139,7 @@ class TestActivities(TestCase):
         response = self.client.post(
             path=f'{self.ACTIVITIES_URL}task/{task['data']['id']}/update-status/',
             data=self.data.new_status,
-            headers={'Authorization': f'Token {self.profile_2.data['token']}', }
+            headers={'Authorization': f'Token {self.profile_7.data['token']}', }
         )
         self.assertEqual(response.status_code, 202)
 
@@ -151,7 +149,7 @@ class TestActivities(TestCase):
         response = self.client.post(
             path=f'{self.ACTIVITIES_URL}task/{task['data']['id']}/update-status/',
             data=self.data.new_status,
-            headers={'Authorization': f'Token {self.profile_1.data['token']}', }
+            headers={'Authorization': f'Token {self.profile_6.data['token']}', }
         )
         self.assertEqual(response.status_code, 400)
 
@@ -161,6 +159,14 @@ class TestActivities(TestCase):
         response = self.client.post(
             path=f'{self.ACTIVITIES_URL}task/{task['data']['id']}/estimate-task/',
             data=self.data.task_mark_1,
-            headers={'Authorization': f'Token {self.profile_1.data['token']}', }
+            headers={'Authorization': f'Token {self.profile_6.data['token']}', }
         )
         self.assertEqual(response.status_code, 201)
+
+    # Получение своих оценок
+    def test_get_marks(self):
+        response = self.client.get(
+            path=f'{self.ACTIVITIES_URL}task/get-marks/',
+            headers={'Authorization': f'Token {self.profile_6.data['token']}'},
+        )
+        self.assertEqual(response.status_code, 200)
