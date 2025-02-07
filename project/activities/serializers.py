@@ -126,6 +126,7 @@ class SuccessResponseWithMeeting(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
     data = MeetingSerializer()
 
+
 class SuccessResponseWithMarks(serializers.Serializer):
     message = serializers.CharField(default='Операция прошла удачно')
     data = TaskEstimationSerializer()
